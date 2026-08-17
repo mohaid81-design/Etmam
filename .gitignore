@@ -1,0 +1,18 @@
+## .NET
+bin/
+obj/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Build/installer output
+publish/
+publish-release/
+publish-release-x86/
+installer/Output/

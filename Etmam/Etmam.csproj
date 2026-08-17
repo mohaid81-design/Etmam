@@ -1,0 +1,142 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DevExpress.Win" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win.Design" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win.Dialogs" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win.Grid" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win.Reporting" Version="25.2.6" />
+    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Gui\CostControlMgt\ucCostControlMgt.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\ConstructionInspectionRequest\ucCIR.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\frmEquipment.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\frmActivitySelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDailyLabor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDailyStaff.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDailyEquipment.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucWorkDoneToday.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDailyReports.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\frmDailyReport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDisruptedActivity.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucInspection.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucDailyMaterial.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucIssue.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DailyReport\ucWorkPlannedTowmorrow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\DrawingsMgt\ucDwgMgt.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\DocumentsMgt\MaterialApprovalRequest\ucMAR.cs" />
+    <Compile Update="Gui\DocumentsMgt\MaterialInspectionRequest\ucMIR.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsMgt\ucProjectMgt.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\SubcontractorMgt\ucSubcontractorMgt.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneOth.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneMec.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneElc.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneArc.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <!-- Procurement Masters UserControls -->
+    <Compile Update="Gui\ProcurementMgt\Masters\ucSuppliers.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProcurementMgt\Masters\ucSuppliers.Designer.cs">
+      <DependentUpon>ucSuppliers.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Gui\ProcurementMgt\Masters\ucSuppliers.resx">
+      <DependentUpon>ucSuppliers.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Code\Helper\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Data\Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>

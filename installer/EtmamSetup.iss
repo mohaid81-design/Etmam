@@ -1,5 +1,5 @@
 #define MyAppName "Etmam"
-#define MyAppNameArabic "نظام إتمام لإدارة المشاريع"
+#define MyAppNameArabic "برنامج إتمام لإدارة المشاريع"
 #define MyAppVersion "1.3.0"
 #define MyAppPublisher "Etmam"
 #define MyAppExeName "Etmam.exe"
@@ -60,6 +60,15 @@ Source: "{#MyPublishDir}\Api\*"; DestDir: "{app}\Api"; Excludes: "*.pdb,\BuildHo
 ; (DirectWrite-aware) font stack and gets correct metrics everywhere, matching how it
 ; already renders on machines where Cairo happens to be installed system-wide.
 Source: "..\Etmam\Resources\Fonts\Cairo-VariableFont.ttf"; DestDir: "{autofonts}"; FontInstall: "Cairo"; Flags: onlyifdoesntexist uninsneveruninstall
+; Optional pre-provisioned DB connection (see connection-template.json's header comment) -
+; whoever compiles this installer may drop a filled-in connection.local.json next to this .iss
+; file before running ISCC; skipifsourcedoesntexist means the installer still compiles fine when
+; it's absent (the normal case). Placed in {tmp} - Inno's own scratch dir, wiped when Setup exits -
+; not {app}, so nothing extra lingers on disk after install beyond what's already embedded in this
+; EtmamSetup.exe itself. [Run] below feeds it to Etmam.exe --provision-connection --silent right
+; after install, silently seeding this machine's connection profile the same way frmConnecting or
+; a manual `--provision-connection` run would, then Setup discards the temp copy.
+Source: "connection.local.json"; DestDir: "{tmp}"; Flags: skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -67,6 +76,7 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--provision-connection ""{tmp}\connection.local.json"" --silent"; Check: FileExists(ExpandConstant('{tmp}\connection.local.json')); Flags: runhidden waituntilterminated; StatusMsg: "جاري إعداد الاتصال بقاعدة البيانات..."
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]

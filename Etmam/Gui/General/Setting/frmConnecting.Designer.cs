@@ -64,19 +64,19 @@ namespace Etmam
             ((System.ComponentModel.ISupportInitialize)txtUserPassword.Properties).BeginInit();
             ((System.ComponentModel.ISupportInitialize)chkEncrypt.Properties).BeginInit();
             SuspendLayout();
-            //
+            // 
             // labelActive
-            //
+            // 
             labelActive.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelActive.Appearance.Options.UseFont = true;
             labelActive.Location = new Point(15, 15);
             labelActive.Name = "labelActive";
-            labelActive.Size = new Size(670, 23);
+            labelActive.Size = new Size(113, 23);
             labelActive.TabIndex = 0;
             labelActive.Text = "الاتصال النشط الحالي:";
-            //
+            // 
             // gridControl1
-            //
+            // 
             gridControl1.DataSource = profilesBindingSource;
             gridControl1.Location = new Point(15, 44);
             gridControl1.MainView = gridView1;
@@ -84,42 +84,42 @@ namespace Etmam
             gridControl1.Size = new Size(670, 160);
             gridControl1.TabIndex = 1;
             gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
-            //
+            // 
             // gridView1
-            //
+            // 
             gridView1.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] { colName, colServer, colDatabase });
             gridView1.GridControl = gridControl1;
             gridView1.Name = "gridView1";
             gridView1.OptionsBehavior.Editable = false;
             gridView1.OptionsView.ShowGroupPanel = false;
             gridView1.FocusedRowChanged += gridView1_FocusedRowChanged;
-            //
+            // 
             // colName
-            //
+            // 
             colName.Caption = "اسم الاتصال";
             colName.FieldName = "Name";
             colName.Name = "colName";
             colName.Visible = true;
             colName.VisibleIndex = 0;
-            //
+            // 
             // colServer
-            //
+            // 
             colServer.Caption = "المخدم";
             colServer.FieldName = "Server";
             colServer.Name = "colServer";
             colServer.Visible = true;
             colServer.VisibleIndex = 1;
-            //
+            // 
             // colDatabase
-            //
+            // 
             colDatabase.Caption = "قاعدة البيانات";
             colDatabase.FieldName = "Database";
             colDatabase.Name = "colDatabase";
             colDatabase.Visible = true;
             colDatabase.VisibleIndex = 2;
-            //
+            // 
             // btnNew
-            //
+            // 
             btnNew.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             btnNew.Appearance.Options.UseFont = true;
             btnNew.Location = new Point(15, 210);
@@ -128,9 +128,9 @@ namespace Etmam
             btnNew.TabIndex = 2;
             btnNew.Text = "جديد";
             btnNew.Click += btnNew_Click;
-            //
+            // 
             // btnDelete
-            //
+            // 
             btnDelete.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             btnDelete.Appearance.Options.UseFont = true;
             btnDelete.Location = new Point(180, 210);
@@ -139,9 +139,9 @@ namespace Etmam
             btnDelete.TabIndex = 3;
             btnDelete.Text = "حذف";
             btnDelete.Click += btnDelete_Click;
-            //
+            // 
             // btnSetActive
-            //
+            // 
             btnSetActive.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             btnSetActive.Appearance.Options.UseFont = true;
             btnSetActive.Location = new Point(345, 210);
@@ -150,19 +150,19 @@ namespace Etmam
             btnSetActive.TabIndex = 4;
             btnSetActive.Text = "تعيين كنشط وإعادة التشغيل";
             btnSetActive.Click += btnSetActive_Click;
-            //
+            // 
             // labelName
-            //
+            // 
             labelName.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelName.Appearance.Options.UseFont = true;
             labelName.Location = new Point(15, 254);
             labelName.Name = "labelName";
-            labelName.Size = new Size(670, 23);
+            labelName.Size = new Size(68, 23);
             labelName.TabIndex = 5;
             labelName.Text = "اسم الاتصال:";
-            //
+            // 
             // txtName
-            //
+            // 
             txtName.Location = new Point(15, 278);
             txtName.Name = "txtName";
             txtName.Properties.Appearance.BackColor = Color.White;
@@ -172,19 +172,19 @@ namespace Etmam
             txtName.RightToLeft = RightToLeft.No;
             txtName.Size = new Size(670, 26);
             txtName.TabIndex = 6;
-            //
+            // 
             // labelServer
-            //
+            // 
             labelServer.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelServer.Appearance.Options.UseFont = true;
             labelServer.Location = new Point(15, 312);
             labelServer.Name = "labelServer";
-            labelServer.Size = new Size(670, 23);
+            labelServer.Size = new Size(67, 23);
             labelServer.TabIndex = 7;
             labelServer.Text = "إسم المخدم:";
-            //
+            // 
             // txtServer
-            //
+            // 
             txtServer.Location = new Point(15, 336);
             txtServer.Name = "txtServer";
             txtServer.Properties.Appearance.BackColor = Color.White;
@@ -194,19 +194,19 @@ namespace Etmam
             txtServer.RightToLeft = RightToLeft.No;
             txtServer.Size = new Size(670, 26);
             txtServer.TabIndex = 8;
-            //
+            // 
             // labelDataBase
-            //
+            // 
             labelDataBase.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelDataBase.Appearance.Options.UseFont = true;
             labelDataBase.Location = new Point(15, 370);
             labelDataBase.Name = "labelDataBase";
-            labelDataBase.Size = new Size(670, 23);
+            labelDataBase.Size = new Size(105, 23);
             labelDataBase.TabIndex = 9;
             labelDataBase.Text = "إسم قاعدة البيانات:";
-            //
+            // 
             // txtDataBase
-            //
+            // 
             txtDataBase.Location = new Point(15, 394);
             txtDataBase.Name = "txtDataBase";
             txtDataBase.Properties.Appearance.BackColor = Color.White;
@@ -216,30 +216,31 @@ namespace Etmam
             txtDataBase.RightToLeft = RightToLeft.No;
             txtDataBase.Size = new Size(670, 26);
             txtDataBase.TabIndex = 10;
-            //
+            // 
             // chkWindowsAuth
-            //
+            // 
             chkWindowsAuth.Location = new Point(15, 428);
             chkWindowsAuth.Name = "chkWindowsAuth";
             chkWindowsAuth.Properties.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             chkWindowsAuth.Properties.Appearance.Options.UseFont = true;
             chkWindowsAuth.Properties.Caption = "مصادقة ويندوز (Windows Authentication)";
-            chkWindowsAuth.Size = new Size(400, 24);
+            chkWindowsAuth.Size = new Size(400, 27);
             chkWindowsAuth.TabIndex = 11;
             chkWindowsAuth.CheckedChanged += chkWindowsAuth_CheckedChanged;
-            //
+            // 
             // labelUser
-            //
+            // 
             labelUser.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelUser.Appearance.Options.UseFont = true;
             labelUser.Location = new Point(15, 458);
             labelUser.Name = "labelUser";
-            labelUser.Size = new Size(670, 23);
+            labelUser.Size = new Size(83, 23);
             labelUser.TabIndex = 12;
             labelUser.Text = "إسم المستخدم:";
-            //
+            // 
             // txtUser
-            //
+            // 
+            txtUser.EditValue = "";
             txtUser.Location = new Point(15, 482);
             txtUser.Name = "txtUser";
             txtUser.Properties.Appearance.BackColor = Color.White;
@@ -249,19 +250,20 @@ namespace Etmam
             txtUser.RightToLeft = RightToLeft.No;
             txtUser.Size = new Size(670, 26);
             txtUser.TabIndex = 13;
-            //
+            // 
             // labelUserPassword
-            //
+            // 
             labelUserPassword.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             labelUserPassword.Appearance.Options.UseFont = true;
             labelUserPassword.Location = new Point(15, 516);
             labelUserPassword.Name = "labelUserPassword";
-            labelUserPassword.Size = new Size(670, 23);
+            labelUserPassword.Size = new Size(64, 23);
             labelUserPassword.TabIndex = 14;
             labelUserPassword.Text = "كلمة المرور:";
-            //
+            // 
             // txtUserPassword
-            //
+            // 
+            txtUserPassword.EditValue = "";
             txtUserPassword.Location = new Point(15, 540);
             txtUserPassword.Name = "txtUserPassword";
             txtUserPassword.Properties.Appearance.BackColor = Color.White;
@@ -272,19 +274,19 @@ namespace Etmam
             txtUserPassword.RightToLeft = RightToLeft.No;
             txtUserPassword.Size = new Size(670, 26);
             txtUserPassword.TabIndex = 15;
-            //
+            // 
             // chkEncrypt
-            //
+            // 
             chkEncrypt.Location = new Point(15, 574);
             chkEncrypt.Name = "chkEncrypt";
             chkEncrypt.Properties.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             chkEncrypt.Properties.Appearance.Options.UseFont = true;
             chkEncrypt.Properties.Caption = "تشفير الاتصال (Encrypt)";
-            chkEncrypt.Size = new Size(400, 24);
+            chkEncrypt.Size = new Size(400, 27);
             chkEncrypt.TabIndex = 16;
-            //
+            // 
             // btnSaveProfile
-            //
+            // 
             btnSaveProfile.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             btnSaveProfile.Appearance.Options.UseFont = true;
             btnSaveProfile.Location = new Point(15, 610);
@@ -293,9 +295,9 @@ namespace Etmam
             btnSaveProfile.TabIndex = 17;
             btnSaveProfile.Text = "حفظ الاتصال";
             btnSaveProfile.Click += btnSaveProfile_Click;
-            //
+            // 
             // btnTest
-            //
+            // 
             btnTest.Appearance.Font = new Font("Cairo", 8.5F, FontStyle.Bold);
             btnTest.Appearance.Options.UseFont = true;
             btnTest.Location = new Point(360, 610);
@@ -304,12 +306,13 @@ namespace Etmam
             btnTest.TabIndex = 18;
             btnTest.Text = "اختبار الاتصال";
             btnTest.Click += btnTest_Click;
-            //
+            // 
             // frmConnecting
-            //
+            // 
+            Appearance.Options.UseFont = true;
             AutoScaleDimensions = new SizeF(6F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(700, 664);
+            ClientSize = new Size(702, 666);
             Controls.Add(gridControl1);
             Controls.Add(labelActive);
             Controls.Add(btnNew);

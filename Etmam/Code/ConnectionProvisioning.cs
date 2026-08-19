@@ -20,6 +20,7 @@ namespace Etmam
     internal static class ConnectionProvisioning
     {
         private const string SwitchName = "--provision-connection";
+        private const string SilentSwitchName = "--silent";
 
         /// <summary>Returns true if this run was a provisioning request (handled here, caller
         /// should exit immediately) - false means "not a provisioning run, continue normal startup".</summary>
@@ -28,10 +29,16 @@ namespace Etmam
             var index = Array.FindIndex(args, a => a.Equals(SwitchName, StringComparison.OrdinalIgnoreCase));
             if (index < 0) return false;
 
+            // --silent: used by the installer's own [Run] step (see EtmamSetup.iss) when a
+            // connection.local.json was bundled in - runs unattended with no dialogs, success or
+            // failure. Interactive/manual runs (the documented normal usage) still get feedback.
+            bool silent = Array.Exists(args, a => a.Equals(SilentSwitchName, StringComparison.OrdinalIgnoreCase));
+
             if (index + 1 >= args.Length)
             {
-                MessageBox.Show($"الاستخدام: Etmam.exe {SwitchName} <مسار ملف JSON>", "إعداد الاتصال",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (!silent)
+                    MessageBox.Show($"الاستخدام: Etmam.exe {SwitchName} <مسار ملف JSON>", "إعداد الاتصال",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return true;
             }
 
@@ -49,14 +56,16 @@ namespace Etmam
 
                 Data.DBSetting.SaveProfiles(file.Profiles, file.ActiveProfile ?? file.Profiles[0].Name);
 
-                MessageBox.Show(
-                    $"تم حفظ {file.Profiles.Count} ملف اتصال بنجاح على هذا الجهاز.\nالملف النشط: {file.ActiveProfile ?? file.Profiles[0].Name}\n\n" +
-                    "يمكنك الآن حذف ملف JSON هذا بأمان وتشغيل البرنامج عادةً.",
-                    "تم الإعداد", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!silent)
+                    MessageBox.Show(
+                        $"تم حفظ {file.Profiles.Count} ملف اتصال بنجاح على هذا الجهاز.\nالملف النشط: {file.ActiveProfile ?? file.Profiles[0].Name}\n\n" +
+                        "يمكنك الآن حذف ملف JSON هذا بأمان وتشغيل البرنامج عادةً.",
+                        "تم الإعداد", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"فشل إعداد الاتصال:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!silent)
+                    MessageBox.Show($"فشل إعداد الاتصال:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             return true;

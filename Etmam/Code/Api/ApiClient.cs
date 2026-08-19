@@ -99,6 +99,10 @@ namespace Etmam
             return result;
         }
 
+        public static async Task CompleteProfileAsync(string fullName, string jobTitle, string company, string newPassword, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, "api/auth/complete-profile",
+                new { fullName, jobTitle, company, newPassword }, ct).ConfigureAwait(false);
+
         // ─── Projects ───────────────────────────────────────────────────────
 
         public static async Task<List<ProjectsList>> GetProjectsAsync(CancellationToken ct = default)
@@ -175,6 +179,7 @@ namespace Etmam
         public int UserId { get; set; }
         public string UserName { get; set; } = "";
         public string? FullName { get; set; }
+        public string? JobTitle { get; set; }
         public string? Role { get; set; }
         public string? Company { get; set; }
         public bool MustChangePassword { get; set; }

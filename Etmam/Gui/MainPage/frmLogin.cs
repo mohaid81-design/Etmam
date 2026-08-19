@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 using Core;
@@ -15,8 +13,6 @@ namespace Etmam
 {
     public partial class frmLogin : XtraForm
     {
-        protected Data.DataContext DC => Data.DataContext.Shared;
-
         #region Constructor
         public frmLogin()
         {
@@ -111,21 +107,20 @@ namespace Etmam
             Session.Machine = Environment.MachineName;
 
             SaveLoginSettings();
-            LogAction(result.UserId, result.UserName, "دخول", "شاشة الدخول");
+            // Login is audited server-side now (AuthService.LoginAsync writes ActionLogs itself),
+            // so every successful login is logged regardless of which client authenticated.
 
             // Mandatory Password Update and Profile Completion — AuthService.LoginAsync computes
             // this identically to the condition that used to live here.
             if (result.MustChangePassword)
             {
-                using (var updateFrm = new frmUpdatePassword(result.UserId))
-                {
-                    if (updateFrm.ShowDialog() != DialogResult.OK) return;
-                }
+                using var updateFrm = new frmUpdatePassword(result.FullName, result.JobTitle, result.Company);
+                if (updateFrm.ShowDialog() != DialogResult.OK) return;
 
-                // Refresh session data after mandatory update. frmUpdatePassword still writes
-                // directly via Data (out of scope for this slice), so reading it back the same way
-                // is the accurate source for what it just saved (JobTitle/Company/FullName).
-                Session.CurrentUser = DC.UsersList.GetBy("Id = @Id", new { Id = result.UserId }).First();
+                // frmUpdatePassword exposes what it just saved directly - no need to re-fetch it.
+                Session.CurrentUser.FullName = updateFrm.SavedFullName;
+                Session.CurrentUser.JobTitle = updateFrm.SavedJobTitle;
+                Session.CurrentUser.Company = updateFrm.SavedCompany;
             }
 
             this.DialogResult = DialogResult.OK;
@@ -145,23 +140,6 @@ namespace Etmam
                 Settings.Default.RememberMe = false;
             }
             Settings.Default.Save();
-        }
-
-        private void LogAction(int userId, string? userName, string type, string location)
-        {
-            try
-            {
-                DC.ActionLogs.Add(new Core.ActionLogs
-                {
-                    UserID = userId,
-                    UserName = userName ?? "Unknown",
-                    ActionType = type,
-                    ActionLocation = location,
-                    ActionDate = DateTime.Now,
-                    MachineName = Environment.MachineName
-                });
-            }
-            catch { /* Silent log failure to avoid blocking login */ }
         }
 
         private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);

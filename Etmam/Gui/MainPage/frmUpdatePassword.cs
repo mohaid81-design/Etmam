@@ -1,43 +1,29 @@
 using System;
-using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
-using Data;
 
 namespace Etmam
 {
     public partial class frmUpdatePassword : XtraForm
     {
-        protected Data.DataContext DC => Data.DataContext.Shared;
-        private readonly int _userId;
-        private Core.UsersList? _user;
+        // Prefilled directly from frmLogin's already-fetched ApiLoginResult instead of a separate
+        // "get user" round trip - the login response already carries everything this form needs.
+        public string? SavedFullName { get; private set; }
+        public string? SavedJobTitle { get; private set; }
+        public string? SavedCompany { get; private set; }
 
-        public frmUpdatePassword(int userId)
+        public frmUpdatePassword(string? fullName, string? jobTitle, string? company)
         {
             InitializeComponent();
             //DesignSystem.ApplyFormBranding(this);
             this.Icon = AppIcon.Default;
-            _userId = userId;
-            LoadUserData();
+            txtFullName.Text = fullName;
+            txtJobTitle.Text = jobTitle;
+            txtCompany.Text = company;
         }
 
-        private void LoadUserData()
-        {
-            try
-            {
-                _user = DC.UsersList.GetBy("Id = @Id", new { Id = _userId }).FirstOrDefault();
-                if (_user != null)
-                {
-                    txtFullName.Text = _user.FullName;
-                    txtJobTitle.Text = _user.JobTitle;
-                    txtCompany.Text = _user.Company;
-                }
-            }
-            catch { /* Silent failure for loading */ }
-        }
-
-        private void btnSave_Click(object sender, EventArgs e)
+        private async void btnSave_Click(object sender, EventArgs e)
         {
             string fullName = txtFullName.Text.Trim();
             string jobTitle = txtJobTitle.Text.Trim();
@@ -82,23 +68,14 @@ namespace Etmam
                 return;
             }
 
-            if (_user == null)
-            {
-                XtraMessageBox.Show("تعذر تحميل بيانات المستخدم", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             var handle = ShowOverlay();
             try
             {
-                // Update user details, hash the new password, and clear IsFirstLogin flag
-                _user.FullName = fullName;
-                _user.JobTitle = jobTitle;
-                _user.Company = company;
-                _user.Password = Core.Security.PasswordHasher.Hash(newPass);
-                _user.IsFirstLogin = false;
+                await ApiClient.CompleteProfileAsync(fullName, jobTitle, company, newPass);
 
-                DC.UsersList.Edit(_user.Id, _user);
+                SavedFullName = fullName;
+                SavedJobTitle = jobTitle;
+                SavedCompany = company;
 
                 XtraMessageBox.Show("تم تحديث البيانات بنجاح. يرجى تسجيل الدخول مرة أخرى.", "تم بنجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;

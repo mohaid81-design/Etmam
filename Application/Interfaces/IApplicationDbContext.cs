@@ -14,6 +14,7 @@ namespace Application.Interfaces
         DbSet<UsersList> UsersList { get; }
         DbSet<ProjectsList> ProjectsList { get; }
         DbSet<UserProjectAccess> UserProjectAccess { get; }
+        DbSet<ActionLogs> ActionLogs { get; }
 
         // Procurement/Inventory masters (batch 1)
         DbSet<StakeholdersList> StakeholdersList { get; }

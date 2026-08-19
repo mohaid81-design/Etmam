@@ -1,0 +1,36 @@
+@page "/modules/{Slug}"
+
+<PageTitle>@Title - إتمام</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">@Title</MudText>
+
+<MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Construction">
+    غير متاح بعد عبر الويب - استخدم تطبيق سطح المكتب لهذه الوحدة حالياً. سيتم ربطها بواجهة API
+    وتفعيلها هنا لاحقاً، حسب نفس نهج الترحيل التدريجي المتبع لوحدة المشاريع
+    (<code>docs/api-migration-checklist.md</code>).
+</MudAlert>
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = "";
+
+    private static readonly Dictionary<string, string> Titles = new()
+    {
+        ["planning"] = "التخطيط",
+        ["budget"] = "الموازنة",
+        ["cost-control"] = "ضبط التكاليف",
+        ["boq"] = "جداول الكميات",
+        ["procurement"] = "المشتريات",
+        ["subcontractors"] = "مقاولو الباطن",
+        ["inventory"] = "المخزون",
+        ["contracts"] = "العقود",
+        ["documents"] = "المستندات",
+        ["edms"] = "إدارة الوثائق (EDMS)",
+        ["correspondence"] = "المراسلات",
+        ["quality"] = "الجودة",
+        ["hse"] = "الصحة والسلامة (HSE)",
+        ["workflow"] = "سير العمل والاعتمادات",
+    };
+
+    private string Title => Titles.TryGetValue(Slug, out var title) ? title : Slug;
+}

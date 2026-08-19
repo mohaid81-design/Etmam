@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using Core;
@@ -9,6 +10,8 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraEditors.Repository;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraSplashScreen;
+using Microsoft.Data.SqlClient;
 
 namespace Etmam
 {
@@ -125,24 +128,33 @@ namespace Etmam
         public virtual void HandleToolbarCopy()
         {
             if (CurrentProjectId == 0) return;
-            var lastReport = DC.DailyReport.GetBy(
-                "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
-                new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
 
-            if (lastReport == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه لهذا المشروع.", "تنبهم", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+                var lastReport = DC.DailyReport.GetBy(
+                    "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
+                    new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
 
-            int count = CopyFromPrevious(lastReport.Id);
-            if (count > 0)
-            {
-                XtraMessageBox.Show($"تم نسخ {count} سجلات بنجاح من تقرير يوم {lastReport.ReportDate:yyyy/MM/dd}.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (lastReport == null)
+                {
+                    XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه لهذا المشروع.", "تنبهم", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                int count = CopyFromPrevious(lastReport.Id);
+                if (count > 0)
+                {
+                    XtraMessageBox.Show($"تم نسخ {count} سجلات بنجاح من تقرير يوم {lastReport.ReportDate:yyyy/MM/dd}.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    XtraMessageBox.Show("تم نسخ كافة البيانات المتاحة مسبقاً أو لا توجد بيانات جديدة للنسخ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
-            else
+            finally
             {
-                XtraMessageBox.Show("تم نسخ كافة البيانات المتاحة مسبقاً أو لا توجد بيانات جديدة للنسخ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CloseOverlay(handle);
             }
         }
 
@@ -190,12 +202,15 @@ namespace Etmam
             }
         }
 
-        public override void SaveData(int dailyReportId)
+        public override void SaveData(int dailyReportId, SqlTransaction? transaction = null)
         {
             var helper = DC.GetHelper<DailyReportIssue>();
-            foreach (var id in GetDeletedIds()) helper.Delete(id);
+            var deletedIds = GetDeletedIds();
+            if (deletedIds.Count > 0) helper.DeleteRange(deletedIds, transaction);
             ClearDeletedIds();
 
+            var toAdd = new List<DailyReportIssue>();
+            var toEdit = new List<DailyReportIssue>();
             foreach (var item in DataSource)
             {
                 item.DailyReportId = dailyReportId;
@@ -204,24 +219,34 @@ namespace Etmam
                     item.CreatedDate = DateTime.Now;
                     item.CreatedMachine = Session.Machine;
                     item.CreatedBy = Session.CurrentUser?.Id ?? 0;
-                    helper.Add(item);
+                    toAdd.Add(item);
                 }
                 else
                 {
                     item.UpdateDate = DateTime.Now;
                     item.UpdateMachine = Session.Machine;
                     item.UpdateBy = Session.CurrentUser?.Id ?? 0;
-                    helper.Edit(item.Id, item);
+                    toEdit.Add(item);
                 }
             }
+            if (toAdd.Count > 0) helper.AddRange(toAdd, transaction);
+            if (toEdit.Count > 0) helper.EditRange(toEdit, transaction);
         }
 
         public override void LoadData()
         {
-            if (CurrentDailyReportId == 0) return;
-            var list = DC.GetHelper<DailyReportIssue>().GetBy("DailyReportId = @id AND IsDelete = 0", new { id = CurrentDailyReportId });
-            DataSource = new System.ComponentModel.BindingList<DailyReportIssue>(list);
-            InitializeBaseGrid();
+            var handle = ShowOverlay();
+            try
+            {
+                if (CurrentDailyReportId == 0) return;
+                var list = DC.GetHelper<DailyReportIssue>().GetBy("DailyReportId = @id AND IsDelete = 0", new { id = CurrentDailyReportId });
+                DataSource = new System.ComponentModel.BindingList<DailyReportIssue>(list);
+                InitializeBaseGrid();
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public ucIssue()
@@ -312,8 +337,16 @@ namespace Etmam
 
         // ─── Standardization Overrides ─────────────────────────────────────
 
-        protected virtual Func<DailyReportIssue, DailyReportIssue, bool> GetDuplicatePredicate() 
-            => (a, b) => (a.Item ?? string.Empty) == (b.Item ?? string.Empty) 
+        protected virtual Func<DailyReportIssue, DailyReportIssue, bool> GetDuplicatePredicate()
+            => (a, b) => (a.Item ?? string.Empty) == (b.Item ?? string.Empty)
                       && (a.Description ?? string.Empty) == (b.Description ?? string.Empty);
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
+        }
     }
 }

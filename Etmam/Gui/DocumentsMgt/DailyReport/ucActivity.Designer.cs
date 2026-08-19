@@ -143,15 +143,17 @@ namespace Etmam
             barDockControlTop.Dock = DockStyle.Top;
             barDockControlTop.Location = new Point(0, 0);
             barDockControlTop.Manager = barManager1;
+            barDockControlTop.Margin = new Padding(3, 5, 3, 5);
             barDockControlTop.Size = new Size(576, 48);
             // 
             // barDockControlBottom
             // 
             barDockControlBottom.CausesValidation = false;
             barDockControlBottom.Dock = DockStyle.Bottom;
-            barDockControlBottom.Location = new Point(0, 542);
+            barDockControlBottom.Location = new Point(0, 702);
             barDockControlBottom.Manager = barManager1;
-            barDockControlBottom.Size = new Size(576, 22);
+            barDockControlBottom.Margin = new Padding(3, 5, 3, 5);
+            barDockControlBottom.Size = new Size(576, 29);
             // 
             // barDockControlLeft
             // 
@@ -159,7 +161,8 @@ namespace Etmam
             barDockControlLeft.Dock = DockStyle.Left;
             barDockControlLeft.Location = new Point(0, 48);
             barDockControlLeft.Manager = barManager1;
-            barDockControlLeft.Size = new Size(0, 494);
+            barDockControlLeft.Margin = new Padding(3, 5, 3, 5);
+            barDockControlLeft.Size = new Size(0, 654);
             // 
             // barDockControlRight
             // 
@@ -167,7 +170,8 @@ namespace Etmam
             barDockControlRight.Dock = DockStyle.Right;
             barDockControlRight.Location = new Point(576, 48);
             barDockControlRight.Manager = barManager1;
-            barDockControlRight.Size = new Size(0, 494);
+            barDockControlRight.Margin = new Padding(3, 5, 3, 5);
+            barDockControlRight.Size = new Size(0, 654);
             // 
             // imageCollection1
             // 
@@ -188,12 +192,14 @@ namespace Etmam
             // gridControl1
             // 
             gridControl1.Dock = DockStyle.Fill;
+            gridControl1.EmbeddedNavigator.Margin = new Padding(3, 5, 3, 5);
             gridControl1.Location = new Point(0, 48);
             gridControl1.MainView = gridView1;
+            gridControl1.Margin = new Padding(3, 5, 3, 5);
             gridControl1.MenuManager = barManager1;
             gridControl1.Name = "gridControl1";
             gridControl1.RightToLeft = RightToLeft.Yes;
-            gridControl1.Size = new Size(576, 494);
+            gridControl1.Size = new Size(576, 654);
             gridControl1.TabIndex = 9;
             gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
             // 
@@ -208,6 +214,7 @@ namespace Etmam
             gridView1.Appearance.Row.Font = new Font("Cairo", 8.5F);
             gridView1.Appearance.Row.Options.UseFont = true;
             gridView1.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] { colCategory, colItem, colLocation, colDescription, colId, colScheduleActivityId });
+            gridView1.DetailHeight = 538;
             gridView1.GridControl = gridControl1;
             gridView1.GroupCount = 1;
             gridView1.GroupFormat = "[#image]{1} {2}";
@@ -264,16 +271,17 @@ namespace Etmam
             // 
             // ucActivity
             // 
-            AutoScaleDimensions = new SizeF(6F, 13F);
+            AutoScaleDimensions = new SizeF(6F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(gridControl1);
             Controls.Add(barDockControlLeft);
             Controls.Add(barDockControlRight);
             Controls.Add(barDockControlBottom);
             Controls.Add(barDockControlTop);
+            Margin = new Padding(3, 5, 3, 5);
             Name = "ucActivity";
             RightToLeft = RightToLeft.Yes;
-            Size = new Size(576, 564);
+            Size = new Size(576, 731);
             ((System.ComponentModel.ISupportInitialize)barManager1).EndInit();
             ((System.ComponentModel.ISupportInitialize)imageCollection1).EndInit();
             ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();

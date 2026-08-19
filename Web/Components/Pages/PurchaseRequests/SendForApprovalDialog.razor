@@ -1,0 +1,90 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>إرسال للاعتماد</TitleContent>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else if (_procedures.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">
+                لم يتم تعريف أي إجراء اعتماد لطلبات الشراء بعد. يرجى تعريفه أولاً.
+            </MudAlert>
+        }
+        else
+        {
+            <MudSelect T="int?" @bind-Value="_selectedId" Label="إجراء الاعتماد" Variant="Variant.Outlined">
+                @foreach (var proc in _procedures)
+                {
+                    <MudSelectItem T="int?" Value="proc.Id">@proc.Name</MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Send" Disabled="@(_sending || _selectedId is null)">إرسال</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int PurchaseRequestId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private bool _loading = true;
+    private bool _sending;
+    private List<WorkflowDefinitionDto> _procedures = [];
+    private int? _selectedId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _procedures = await Api.GetAvailableProceduresAsync(PurchaseRequestId);
+            if (_procedures.Count == 1)
+                _selectedId = _procedures[0].Id;
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر تحميل إجراءات الاعتماد: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Send()
+    {
+        if (_selectedId is null) return;
+
+        _sending = true;
+        try
+        {
+            await Api.SendPurchaseRequestForApprovalAsync(PurchaseRequestId, _selectedId.Value);
+            Snackbar.Add("تم إرسال الطلب للاعتماد ✓", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الإرسال: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

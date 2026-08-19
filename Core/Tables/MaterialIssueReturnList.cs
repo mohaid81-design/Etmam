@@ -6,12 +6,19 @@ namespace Core
     public class MaterialIssueReturnList : IBaseEntity
     {
         [Key] public int Id { get; set; }
-        public string? Code { get; set; }
+        public int? Num { get; set; }
         public int? StoreId { get; set; }
         public DateTime? ReturnDate { get; set; }
         public decimal? Amount { get; set; }
         public string? Note { get; set; }
-        public int? PrjId { get; set; }
+        public int? CCIdId { get; set; }
+        public int? BdgId { get; set; }
+        public string? ReturnBy { get; set; }
+
+        // حقول عرض غير مخزَّنة — تُملأ عند الطباعة فقط (انظر MaterialIssueReturnPrinter)
+        [NotMapped] public string? StoreName { get; set; }
+        [NotMapped] public string? ProjectName { get; set; }
+        [NotMapped] public string? FormattedNum { get; set; }
 
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
@@ -23,5 +30,10 @@ namespace Core
         public DateTime? DeletionDate { get; set; }
         public string? DeletionMachine { get; set; }
         public int DeletionBy { get; set; }
+
+        // Optimistic-concurrency token (SQL Server ROWVERSION) — see SqlDataHelper<T> and
+        // DatabaseInitializer.GetSqlType. A save against a stale copy throws ConcurrencyConflictException
+        // instead of silently overwriting another user's edit.
+        public byte[]? RowVersion { get; set; }
     }
 }

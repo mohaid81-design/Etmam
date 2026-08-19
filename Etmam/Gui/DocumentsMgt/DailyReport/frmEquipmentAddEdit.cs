@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using Core;
 using Data;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
@@ -71,6 +72,7 @@ namespace Etmam
 
             _equipment.Name = txtName.Text;
 
+            var handle = ShowOverlay();
             try
             {
                 if (_isNew)
@@ -95,6 +97,7 @@ namespace Etmam
                 XtraMessageBox.Show($"خطأ أثناء الحفظ: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
+            finally { CloseOverlay(handle); }
         }
 
         private bool _anySaved = false;
@@ -129,6 +132,14 @@ namespace Etmam
                 DialogResult = DialogResult.OK; // Set OK if something was saved before closing
             }
             base.OnFormClosing(e);
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 using Data;
 
 namespace Etmam
@@ -15,7 +16,8 @@ namespace Etmam
         public frmUpdatePassword(int userId)
         {
             InitializeComponent();
-            DesignSystem.ApplyFormBranding(this);
+            //DesignSystem.ApplyFormBranding(this);
+            this.Icon = AppIcon.Default;
             _userId = userId;
             LoadUserData();
         }
@@ -86,6 +88,7 @@ namespace Etmam
                 return;
             }
 
+            var handle = ShowOverlay();
             try
             {
                 // Update user details, hash the new password, and clear IsFirstLogin flag
@@ -105,12 +108,23 @@ namespace Etmam
             {
                 XtraMessageBox.Show($"حدث خطأ أثناء حفظ البيانات:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();
+        }
+
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

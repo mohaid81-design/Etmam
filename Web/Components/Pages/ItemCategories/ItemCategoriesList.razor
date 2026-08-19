@@ -1,0 +1,125 @@
+@page "/inventory/item-categories"
+@rendermode InteractiveServer
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>تصنيفات الأصناف - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">تصنيفات الأصناف</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        تصنيف جديد
+    </MudButton>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+        التصنيفات الرئيسية الخمسة (مواد / مقاولين / خدمات / معدات / ايجارات) ثابتة ولا يمكن تعديلها أو حذفها.
+    </MudAlert>
+    <MudTable Items="@_categories" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>الكود</MudTh>
+            <MudTh>الاسم</MudTh>
+            <MudTh>التصنيف الأب</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="الكود">@context.Code</MudTd>
+            <MudTd DataLabel="الاسم">
+                <span style="padding-inline-start: @((context.LvlId ?? 0) * 20)px">
+                    @if (context.IsFixed)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="me-1" style="vertical-align: middle;" />
+                    }
+                    @context.Name
+                </span>
+            </MudTd>
+            <MudTd DataLabel="التصنيف الأب">@context.ParentName</MudTd>
+            <MudTd>
+                @if (!context.IsFixed)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteCategory(context))" />
+                }
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا توجد تصنيفات.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<ItemCategoryDto> _categories = [];
+    private bool _loading = true;
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _categories = await Api.GetItemCategoriesAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل التصنيفات من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<ItemCategoryEditDialog> { { x => x.CategoryId, null } };
+        var dialog = await DialogService.ShowAsync<ItemCategoryEditDialog>("تصنيف جديد", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<ItemCategoryEditDialog> { { x => x.CategoryId, id } };
+        var dialog = await DialogService.ShowAsync<ItemCategoryEditDialog>("تعديل تصنيف", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteCategory(ItemCategoryDto category)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف التصنيف \"{category.Name}\"؟",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Api.DeleteItemCategoryAsync(category.Id);
+            Snackbar.Add("تم حذف التصنيف.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+}

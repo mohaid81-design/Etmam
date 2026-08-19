@@ -1,19 +1,29 @@
 using System;
 using System.Windows.Forms;
 using Core;
+using Data;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
     public partial class ucMAR : BaseUserControl
     {
+        private bool _canManage;
+
         // ── Constructor ───────────────────────────────────────────────────────
         public ucMAR()
         {
             InitializeComponent();
             if (DesignMode) return;
+
+            _canManage = PermissionService.HasPermission(PermNames.MaterialApprovalRequest);
+            bbiInspection.Enabled = _canManage;
+            bbiEditInspection.Enabled = _canManage;
+            bbiDeleteInspection.Enabled = _canManage;
+            bbiPrint.Enabled = _canManage;
 
             DesignSystem.ApplyCairoFont(this);
             SetupGridStyle();
@@ -75,10 +85,11 @@ namespace Etmam
         // ── Data ──────────────────────────────────────────────────────────────
         public void LoadData()
         {
+            var handle = ShowOverlay();
             try
             {
                 int prjId = Session.SelectedProjectId ?? 0;
-                var data = prjId > 0
+                var data = (prjId > 0 && !Session.IsSingleProjectUser)
                     ? DC.MaterialApprovalRequestList.GetBy("PrjId = @PrjId AND IsDelete = 0", new { PrjId = prjId })
                     : DC.MaterialApprovalRequestList.GetBy("IsDelete = 0");
 
@@ -90,6 +101,10 @@ namespace Etmam
                     $"خطأ في تحميل قائمة طلبات اعتماد المواد:\n{ex.Message}",
                     "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public override void OnProjectChanged()
@@ -99,9 +114,22 @@ namespace Etmam
         }
 
         // ── Commands ──────────────────────────────────────────────────────────
+        // نقطة الدخول الموحّدة (bbiInspection/bbiEditInspection والنقر المزدوج) — الفحص هنا يمنع
+        // تجاوز الصلاحية عبر النقر المزدوج الذي لا يمر بحالة تفعيل الأزرار.
         private void OpenForm(int id = 0)
         {
-            var frm = new frmMARAddEdit(id);
+            if (!_canManage)
+            {
+                DevExpress.XtraEditors.XtraMessageBox.Show("ليس لديك صلاحية إدارة طلبات اعتماد المواد (MAR).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var handle = ShowOverlay();
+            frmMARAddEdit frm;
+            try { frm = new frmMARAddEdit(id); }
+            finally { CloseOverlay(handle); }
+
             var result = frm.ShowDialog(this.FindForm());
             if (result == DialogResult.OK || result == DialogResult.Abort)
                 LoadData();
@@ -109,5 +137,13 @@ namespace Etmam
 
         private void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
             => OpenForm(0);
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
+        }
     }
 }

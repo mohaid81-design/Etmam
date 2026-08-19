@@ -11,6 +11,7 @@ using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid.Views.Grid.ViewInfo;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraBars;
+using DevExpress.XtraSplashScreen;
 using Data;
 
 namespace Etmam
@@ -103,70 +104,94 @@ namespace Etmam
 
         public virtual void LoadData()
         {
-            _isInProgressMode = false;
-            DataSource.Clear();
-            
-            IEnumerable<ActivityList> data = string.IsNullOrEmpty(FilterCategory)
-                ? DC.ActivityList.GetAll()
-                : DC.ActivityList.GetBy("Category = @Category", new { Category = FilterCategory });
+            var handle = ShowOverlay();
+            try
+            {
+                _isInProgressMode = false;
+                DataSource.Clear();
 
-            foreach (var item in data)
-                DataSource.Add(item);
-            
-            MainGrid.DataSource = DataSource;
+                IEnumerable<ActivityList> data = string.IsNullOrEmpty(FilterCategory)
+                    ? DC.ActivityList.GetAll()
+                    : DC.ActivityList.GetBy("Category = @Category", new { Category = FilterCategory });
 
-            // Restore standard column mappings using nameof for refactor-safety
-            if (colItem != null) colItem.FieldName = nameof(ActivityList.Item);
-            if (colDescription != null) colDescription.FieldName = nameof(ActivityList.Description);
-            if (colLocation != null) colLocation.FieldName = nameof(ActivityList.Location);
-            if (colCategory != null) colCategory.FieldName = nameof(ActivityList.Category);
+                foreach (var item in data)
+                    DataSource.Add(item);
 
-            if (gridView1.Columns["Qty"] != null)
-                gridView1.Columns["Qty"].Visible = false;
+                MainGrid.DataSource = DataSource;
 
-            UpdateRecordCount();
+                // Restore standard column mappings using nameof for refactor-safety
+                if (colItem != null) colItem.FieldName = nameof(ActivityList.Item);
+                if (colDescription != null) colDescription.FieldName = nameof(ActivityList.Description);
+                if (colLocation != null) colLocation.FieldName = nameof(ActivityList.Location);
+                if (colCategory != null) colCategory.FieldName = nameof(ActivityList.Category);
+
+                if (gridView1.Columns["Qty"] != null)
+                    gridView1.Columns["Qty"].Visible = false;
+
+                UpdateRecordCount();
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public void LoadInProgressActivities()
         {
-            _isInProgressMode = true;
-            
-            var workDoneList = DC.DailyReportWorkDone.GetBy("Qty < 100 AND IsDelete = 0");
-            var allActivities = DC.ActivityList.GetAll();
-
-            foreach (var item in workDoneList)
-                item.Activity = allActivities.FirstOrDefault(a => a.Id == item.ActivityId);
-
-            // Update Grid Columns for nested binding
-            if (colItem != null) colItem.FieldName = "Activity.Item";
-            if (colDescription != null) colDescription.FieldName = "Activity.Description";
-            if (colLocation != null) colLocation.FieldName = "Activity.Location";
-            if (colCategory != null) colCategory.FieldName = "Activity.Category";
-
-            var colQty = gridView1.Columns["Qty"];
-            if (colQty == null)
+            var handle = ShowOverlay();
+            try
             {
-                colQty = gridView1.Columns.AddVisible("Qty", "النسبة %");
-                colQty.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-                colQty.DisplayFormat.FormatString = "P0";
-                colQty.OptionsColumn.AllowEdit = false;
-                DesignSystem.SetColumnCentered(colQty);
-            }
-            else
-            {
-                colQty.Visible = true;
-            }
+                _isInProgressMode = true;
 
-            MainGrid.DataSource = new BindingList<DailyReportWorkDone>(workDoneList.ToList());
-            
-            if (StatusItem != null)
-                StatusItem.Caption = $"أنشطة قيد التنفيذ: {workDoneList.Count()}";
+                var workDoneList = DC.DailyReportWorkDone.GetBy("Qty < 100 AND IsDelete = 0");
+                var allActivities = DC.ActivityList.GetAll();
+
+                foreach (var item in workDoneList)
+                    item.Activity = allActivities.FirstOrDefault(a => a.Id == item.ActivityId);
+
+                // Update Grid Columns for nested binding
+                if (colItem != null) colItem.FieldName = "Activity.Item";
+                if (colDescription != null) colDescription.FieldName = "Activity.Description";
+                if (colLocation != null) colLocation.FieldName = "Activity.Location";
+                if (colCategory != null) colCategory.FieldName = "Activity.Category";
+
+                var colQty = gridView1.Columns["Qty"];
+                if (colQty == null)
+                {
+                    colQty = gridView1.Columns.AddVisible("Qty", "النسبة %");
+                    colQty.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+                    colQty.DisplayFormat.FormatString = "P0";
+                    colQty.OptionsColumn.AllowEdit = false;
+                    DesignSystem.SetColumnCentered(colQty);
+                }
+                else
+                {
+                    colQty.Visible = true;
+                }
+
+                MainGrid.DataSource = new BindingList<DailyReportWorkDone>(workDoneList.ToList());
+
+                if (StatusItem != null)
+                    StatusItem.Caption = $"أنشطة قيد التنفيذ: {workDoneList.Count()}";
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         protected override void UpdateRecordCount()
         {
             if (_isInProgressMode) return; // Handled in LoadInProgressActivities
             base.UpdateRecordCount();
+        }
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 

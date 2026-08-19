@@ -4,7 +4,8 @@ namespace Core
 {
     /// <summary>
     /// Represents a file attachment linked to a drawing in the register.
-    /// Files are stored on disk; this record stores the metadata and path.
+    /// File bytes are stored directly in this row (FileData); StoredPath is a legacy fallback for
+    /// attachments uploaded before this change, still stored on disk.
     /// </summary>
     public class DrawingAttachment : IBaseEntity
     {
@@ -29,8 +30,15 @@ namespace Core
         /// <summary>Original file name shown to the user (e.g. "Plan_Rev2.pdf")</summary>
         public string? FileName { get; set; }
 
-        /// <summary>Full path where the file is stored on disk</summary>
+        /// <summary>Legacy: full path where the file used to be stored on disk. Left populated only on
+        /// attachments uploaded before file bytes moved into the database (see FileData) — no longer
+        /// written for new uploads, kept so old rows still open via AttachmentStorage's disk fallback.</summary>
         public string? StoredPath { get; set; }
+
+        /// <summary>The file's raw bytes, stored directly in the database (VARBINARY(MAX)) — avoids the
+        /// stale-path problem of disk/network storage (moved/renamed shared folders orphaning StoredPath).
+        /// Null on legacy rows that still rely on StoredPath.</summary>
+        public byte[]? FileData { get; set; }
 
         /// <summary>Extension without dot, lowercase (e.g. "pdf", "dwg")</summary>
         public string? FileExtension { get; set; }

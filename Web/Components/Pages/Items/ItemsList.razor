@@ -1,0 +1,135 @@
+@page "/inventory/items"
+@rendermode InteractiveServer
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>الأصناف - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">الأصناف</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        صنف جديد
+    </MudButton>
+</MudStack>
+
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Placeholder="بحث بالاسم أو الكود..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Class="mb-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTable Items="@FilteredItems" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>الكود</MudTh>
+            <MudTh>الاسم</MudTh>
+            <MudTh>التصنيف</MudTh>
+            <MudTh>الوحدة</MudTh>
+            <MudTh>نشط</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="الكود">@context.Code</MudTd>
+            <MudTd DataLabel="الاسم">@context.Name</MudTd>
+            <MudTd DataLabel="التصنيف">@context.CategoryName</MudTd>
+            <MudTd DataLabel="الوحدة">@context.UnitName</MudTd>
+            <MudTd DataLabel="نشط">
+                @if (context.IsActive == true)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" Size="Size.Small" />
+                }
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteItem(context))" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا توجد أصناف.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<ItemDto> _items = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private string _search = "";
+
+    private IEnumerable<ItemDto> FilteredItems =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _items
+            : _items.Where(i => (i.Name ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)
+                              || (i.Code ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _items = await Api.GetItemsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل الأصناف من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchChanged(string value) => _search = value;
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<ItemEditDialog> { { x => x.ItemId, null } };
+        var dialog = await DialogService.ShowAsync<ItemEditDialog>("صنف جديد", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<ItemEditDialog> { { x => x.ItemId, id } };
+        var dialog = await DialogService.ShowAsync<ItemEditDialog>("تعديل صنف", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteItem(ItemDto item)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف الصنف \"{item.Name}\"؟",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Api.DeleteItemAsync(item.Id);
+            Snackbar.Add("تم حذف الصنف.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+}

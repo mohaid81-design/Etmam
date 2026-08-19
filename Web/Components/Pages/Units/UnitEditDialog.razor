@@ -1,0 +1,98 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل وحدة" : "وحدة جديدة")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudTextField @bind-Value="_model.Description" Label="الوصف" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Abbreviation" Label="الاختصار" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Category" Label="المجموعة" Variant="Variant.Outlined" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? UnitId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly FormModel _model = new();
+    private bool _isEdit;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isEdit = UnitId is > 0;
+        if (_isEdit)
+        {
+            var dto = await Api.GetUnitAsync(UnitId!.Value);
+            if (dto is not null)
+            {
+                _model.Description = dto.Description;
+                _model.Abbreviation = dto.Abbreviation;
+                _model.Category = dto.Category;
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdateUnitAsync(UnitId!.Value, new UnitUpdateRequest
+                {
+                    Description = _model.Description,
+                    Abbreviation = _model.Abbreviation,
+                    Category = _model.Category,
+                });
+            }
+            else
+            {
+                await Api.CreateUnitAsync(new UnitCreateRequest
+                {
+                    Description = _model.Description,
+                    Abbreviation = _model.Abbreviation,
+                    Category = _model.Category,
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class FormModel
+    {
+        public string? Description { get; set; }
+        public string? Abbreviation { get; set; }
+        public string? Category { get; set; }
+    }
+}

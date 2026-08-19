@@ -16,3 +16,6 @@ publish/
 publish-release/
 publish-release-x86/
 installer/Output/
+
+## Database backups - contain real data, never belong in a public repo
+Backup/

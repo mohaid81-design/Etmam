@@ -1,0 +1,90 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>إعادة إلى خطوة سابقة</TitleContent>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else if (_steps.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">لا توجد خطوة سابقة يمكن الإعادة إليها.</MudAlert>
+        }
+        else
+        {
+            <MudSelect T="int?" @bind-Value="_selectedStepOrder" Label="الخطوة المستهدفة" Variant="Variant.Outlined" Class="mb-3">
+                @foreach (var step in _steps)
+                {
+                    <MudSelectItem T="int?" Value="step.StepOrder">@step.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField @bind-Value="_comment" Label="سبب الإعادة" Variant="Variant.Outlined" Required="true" Lines="2" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm" Disabled="@(_busy || _selectedStepOrder is null || string.IsNullOrWhiteSpace(_comment))">
+            إعادة
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int PurchaseRequestId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private bool _loading = true;
+    private bool _busy;
+    private List<WorkflowStepOptionDto> _steps = [];
+    private int? _selectedStepOrder;
+    private string? _comment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _steps = await Api.GetReturnToStepOptionsAsync(PurchaseRequestId);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر تحميل خطوات الإجراء: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Confirm()
+    {
+        if (_selectedStepOrder is null || string.IsNullOrWhiteSpace(_comment)) return;
+
+        _busy = true;
+        try
+        {
+            await Api.ReturnPurchaseRequestToStepAsync(PurchaseRequestId, _selectedStepOrder.Value, _comment);
+            Snackbar.Add("تم إعادة الطلب إلى الخطوة المحددة ✓", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الإعادة: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,20 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Core;
 using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraGrid;
-using DevExpress.XtraGrid.Views.Grid;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
     /// <summary>Defines a procedure: its name, its ordered steps, and which users may act at each step.</summary>
-    public class frmWorkflowDefinitionAddEdit : XtraForm
+    public partial class frmWorkflowDefinitionAddEdit : XtraForm
     {
         private static Data.DataContext DC => Data.DataContext.Shared;
 
@@ -23,43 +21,61 @@ namespace Etmam
         private readonly Dictionary<WorkflowStepList, List<int>> _stepAssignees = new();
         private WorkflowStepList? _currentAssigneeStep;
 
-        // ── Controls ──────────────────────────────────────────────────────────
-        private readonly TextEdit txtName = new();
-        private readonly MemoEdit txtDescription = new();
-        private readonly CheckEdit chkActive = new();
+        // Only these modules integrate with WorkflowEngine today (see
+        // PurchaseRequestWorkflowSync/PurchaseOrderWorkflowSync/CIRWorkflowSync's own EntityName
+        // constants) — the combo's stored value must match those exactly so GetAvailableProcedures'
+        // filter matches.
+        private static readonly (string Value, string Label)[] Categories =
+        {
+            ("PurchaseRequestList", "طلب شراء"),
+            ("PurchaseOrderList", "أمر شراء"),
+            ("ConstructionInspectionRequestList", "طلب فحص أعمال (CIR)"),
+        };
 
-        private readonly GridControl gridControl1 = new();
-        private readonly GridView gridView1;
-
-        private readonly CheckedListBoxControl clbUsers = new();
-
-        private readonly SimpleButton btnAddStep;
-        private readonly SimpleButton btnDeleteStep;
-        private readonly SimpleButton btnMoveUp;
-        private readonly SimpleButton btnMoveDown;
-        private readonly SimpleButton btnSave;
-        private readonly SimpleButton btnCancel;
+        // Categories whose sync class (PurchaseRequestWorkflowSync/CIRWorkflowSync) actually filters
+        // candidates by ProjectId/WorkflowDefinitionDisciplineList — only these show the project/
+        // discipline scope controls below. "PurchaseOrderList" is excluded: it's scoped via
+        // ApprovalMatrixList instead (see ApprovalMatrixService), a separate mechanism with its own
+        // screen (frmApprovalMatrixAddEdit) — showing these fields for it would silently do nothing.
+        private static readonly HashSet<string> ScopedCategories = new() { "PurchaseRequestList", "ConstructionInspectionRequestList" };
 
         public frmWorkflowDefinitionAddEdit()
         {
-            gridView1 = new GridView(gridControl1);
-            gridControl1.MainView = gridView1;
-            gridControl1.ViewCollection.Add(gridView1);
+            InitializeComponent();
 
-            btnAddStep = MakeButton("إضافة خطوة", 0);
-            btnDeleteStep = MakeButton("حذف خطوة", 100);
-            btnMoveUp = MakeButton("▲ أعلى", 200);
-            btnMoveDown = MakeButton("▼ أسفل", 290);
-            btnSave = MakeButton("حفظ", 0, true);
-            btnCancel = MakeButton("إلغاء", 100);
+            chkActive.Checked = true;
 
-            BuildLayout();
+            cmbCategory.Properties.Items.AddRange(Categories.Select(c => c.Label).ToArray());
+            cmbCategory.Properties.TextEditStyle = TextEditStyles.DisableTextEditor;
+
+            lookUpEditProject.Properties.DataSource = DC.ProjectsList.GetBy("IsDelete = 0");
+            lookUpEditProject.Properties.ValueMember = "Id";
+            lookUpEditProject.Properties.DisplayMember = "Name";
+            lookUpEditProject.Properties.Columns.AddRange(new[] { new DevExpress.XtraEditors.Controls.LookUpColumnInfo("Name", "Name") });
+
+            LoadDisciplines();
+            chkGeneralDiscipline.Checked = true;
+            chkGeneralDiscipline.CheckedChanged += (s, e) => clbDisciplines.Enabled = !chkGeneralDiscipline.Checked;
+            clbDisciplines.Enabled = false;
+
+            cmbCategory.SelectedIndexChanged += (s, e) => UpdateScopeFieldsVisibility();
+            UpdateScopeFieldsVisibility();
+
+            DesignSystem.ApplyButtonStyle(btnSave, true);
+            DesignSystem.ApplyButtonStyle(btnCancel);
+            DesignSystem.ApplyButtonStyle(btnAddStep);
+            DesignSystem.ApplyButtonStyle(btnDeleteStep);
+            DesignSystem.ApplyButtonStyle(btnMoveUp);
+            DesignSystem.ApplyButtonStyle(btnMoveDown);
+
             WireEvents();
             LoadUsers();
-
-            DesignSystem.ApplyFormBranding(this);
-            DesignSystem.ApplyGridStyle(gridControl1, gridView1);
             ConfigureStepColumns();
+
+            // OpenForEdit rebinds this to a freshly-loaded list when editing an existing procedure —
+            // but for a brand-new one (this constructor only, no OpenForEdit call) nothing else ever
+            // binds the grid, so btnAddStep's rows were added to _steps but never actually displayed.
+            gridControl1.DataSource = _steps;
 
             Text = "إضافة إجراء جديد";
         }
@@ -74,18 +90,32 @@ namespace Etmam
             txtName.Text = def.Name ?? "";
             txtDescription.Text = def.Description ?? "";
             chkActive.Checked = def.IsActive;
+            cmbCategory.Text = Categories.FirstOrDefault(c => c.Value == def.Category).Label ?? "";
+            UpdateScopeFieldsVisibility();
+
+            lookUpEditProject.EditValue = def.ProjectId;
+
+            var disciplineIds = DC.WorkflowDefinitionDisciplineList
+                .GetBy("WorkflowDefinitionId = @id", new { id })
+                .Select(l => l.DisciplineId)
+                .ToList();
+            chkGeneralDiscipline.Checked = disciplineIds.Count == 0;
+            ApplyCheckedDisciplineIds(disciplineIds);
 
             var steps = DC.WorkflowStepList
                 .GetBy("WorkflowDefinitionId = @id", new { id })
                 .OrderBy(s => s.StepOrder)
                 .ToList();
 
-            _steps = new BindingList<WorkflowStepList>(steps);
-            gridControl1.DataSource = _steps;
-
+            // Populate assignees BEFORE binding the grid: setting gridControl1.DataSource below
+            // auto-focuses row 0, which fires FocusedRowChanged -> SwitchAssigneeStep() synchronously,
+            // right there, before this method returns. If _stepAssignees were still empty at that
+            // moment (as it was when this ran after the DataSource assignment), the first step's
+            // checklist would be built from an empty list every time, even though the real assignees
+            // get loaded into _stepAssignees a moment later — just too late for that first render.
             _stepAssignees.Clear();
             _currentAssigneeStep = null;
-            foreach (var step in _steps)
+            foreach (var step in steps)
             {
                 var userIds = DC.WorkflowStepAssigneeList
                     .GetBy("WorkflowStepId = @id", new { id = step.Id })
@@ -94,79 +124,10 @@ namespace Etmam
                 _stepAssignees[step] = userIds;
             }
 
+            _steps = new BindingList<WorkflowStepList>(steps);
+            gridControl1.DataSource = _steps;
+
             Text = $"تعديل الإجراء: {def.Name}";
-        }
-
-        // ── Layout ────────────────────────────────────────────────────────────
-        private void BuildLayout()
-        {
-            Text = "إجراء";
-            Size = new Size(900, 620);
-            StartPosition = FormStartPosition.CenterParent;
-            RightToLeft = RightToLeft.Yes;
-            RightToLeftLayout = true;
-
-            // Header
-            var pnlHeader = new PanelControl { Dock = DockStyle.Top, Height = 110 };
-
-            var lblName = new LabelControl { Text = "اسم الإجراء", Location = new Point(700, 15) };
-            txtName.Location = new Point(430, 12);
-            txtName.Size = new Size(260, 22);
-
-            var lblDesc = new LabelControl { Text = "الوصف", Location = new Point(700, 45) };
-            txtDescription.Location = new Point(20, 45);
-            txtDescription.Size = new Size(670, 50);
-
-            chkActive.Text = "مفعّل";
-            chkActive.Location = new Point(700, 80);
-            chkActive.Checked = true;
-
-            pnlHeader.Controls.Add(lblName);
-            pnlHeader.Controls.Add(txtName);
-            pnlHeader.Controls.Add(lblDesc);
-            pnlHeader.Controls.Add(txtDescription);
-            pnlHeader.Controls.Add(chkActive);
-
-            // Bottom (save/cancel)
-            var pnlBottom = new PanelControl { Dock = DockStyle.Bottom, Height = 46 };
-            btnSave.Location = new Point(700, 8);
-            btnCancel.Location = new Point(600, 8);
-            DesignSystem.ApplyButtonStyle(btnSave, true);
-            pnlBottom.Controls.Add(btnSave);
-            pnlBottom.Controls.Add(btnCancel);
-
-            // Middle: assignees (right) + steps grid (fill)
-            var pnlAssignees = new PanelControl { Dock = DockStyle.Right, Width = 260 };
-            var lblAssignees = new LabelControl { Text = "المستخدمون المعتمدون لهذه الخطوة", Dock = DockStyle.Top, Height = 24 };
-            clbUsers.Dock = DockStyle.Fill;
-            pnlAssignees.Controls.Add(clbUsers);
-            pnlAssignees.Controls.Add(lblAssignees);
-
-            var pnlStepsToolbar = new PanelControl { Dock = DockStyle.Top, Height = 42 };
-            pnlStepsToolbar.Controls.Add(btnAddStep);
-            pnlStepsToolbar.Controls.Add(btnDeleteStep);
-            pnlStepsToolbar.Controls.Add(btnMoveUp);
-            pnlStepsToolbar.Controls.Add(btnMoveDown);
-
-            var pnlSteps = new PanelControl { Dock = DockStyle.Fill };
-            gridControl1.Dock = DockStyle.Fill;
-            pnlSteps.Controls.Add(gridControl1);
-            pnlSteps.Controls.Add(pnlStepsToolbar);
-
-            var pnlMiddle = new PanelControl { Dock = DockStyle.Fill };
-            pnlMiddle.Controls.Add(pnlSteps);
-            pnlMiddle.Controls.Add(pnlAssignees);
-
-            Controls.Add(pnlMiddle);
-            Controls.Add(pnlHeader);
-            Controls.Add(pnlBottom);
-        }
-
-        private static SimpleButton MakeButton(string text, int left, bool primary = false)
-        {
-            var b = new SimpleButton { Text = text, Left = left, Top = 6, Width = 90, Height = 28 };
-            DesignSystem.ApplyButtonStyle(b, primary);
-            return b;
         }
 
         private void ConfigureStepColumns()
@@ -218,6 +179,44 @@ namespace Etmam
                 ? existing : new List<int>();
             ApplyCheckedUserIds(ids);
             clbUsers.Enabled = _currentAssigneeStep != null;
+        }
+
+        // ── Project / Discipline scope ───────────────────────────────────────
+        // Only shown/enabled for categories in ScopedCategories — showing them for a category whose
+        // sync class doesn't consult ProjectId/WorkflowDefinitionDisciplineList would silently do
+        // nothing and mislead whoever sets them.
+        private void UpdateScopeFieldsVisibility()
+        {
+            string? category = Categories.FirstOrDefault(c => c.Label == cmbCategory.Text).Value;
+            bool showScope = category != null && ScopedCategories.Contains(category);
+            lblProject.Visible = showScope;
+            lookUpEditProject.Visible = showScope;
+            chkGeneralDiscipline.Visible = showScope;
+            lblDisciplines.Visible = showScope;
+            clbDisciplines.Visible = showScope;
+        }
+
+        private void LoadDisciplines()
+        {
+            var disciplines = DC.DisciplinesList.GetBy("IsDelete = 0 AND IsActive = 1").OrderBy(d => d.Name).ToList();
+            clbDisciplines.Items.Clear();
+            foreach (var d in disciplines)
+                clbDisciplines.Items.Add(d.Id, d.Name ?? $"تخصص #{d.Id}");
+        }
+
+        private List<int> ReadCheckedDisciplineIds()
+        {
+            var ids = new List<int>();
+            foreach (CheckedListBoxItem item in clbDisciplines.Items)
+                if (item.CheckState == CheckState.Checked)
+                    ids.Add((int)item.Value);
+            return ids;
+        }
+
+        private void ApplyCheckedDisciplineIds(List<int> ids)
+        {
+            foreach (CheckedListBoxItem item in clbDisciplines.Items)
+                item.CheckState = ids.Contains((int)item.Value) ? CheckState.Checked : CheckState.Unchecked;
         }
 
         // ── Users list ────────────────────────────────────────────────────────
@@ -288,6 +287,39 @@ namespace Etmam
             gridView1.RefreshData();
         }
 
+        // New workflow definition → explicit UserWorkflowAccess row per user (granted for the system
+        // admin, denied for everyone else), mirroring frmProjectAddEdit.OnAfterInsert's default-deny
+        // provisioning for UserProjectAccess so the access matrix is always complete rather than
+        // "no row = implicitly denied".
+        private void InitializeWorkflowAccessRows(int workflowDefinitionId)
+        {
+            const int systemAdminUserId = 1;
+
+            DC.UserWorkflowAccess.Add(new UserWorkflowAccess
+            {
+                UserID = systemAdminUserId,
+                WorkflowId = workflowDefinitionId,
+                PermsStatus = true,
+                UpdateDate = DateTime.Now,
+                UpdateMachine = Session.Machine,
+                UpdateBy = Session.CurrentUser?.Id ?? systemAdminUserId
+            });
+
+            var otherUsers = DC.UsersList.GetBy("IsDelete = 0 AND Id <> @AdminId", new { AdminId = systemAdminUserId });
+            foreach (var user in otherUsers)
+            {
+                DC.UserWorkflowAccess.Add(new UserWorkflowAccess
+                {
+                    UserID = user.Id,
+                    WorkflowId = workflowDefinitionId,
+                    PermsStatus = false,
+                    UpdateDate = DateTime.Now,
+                    UpdateMachine = Session.Machine,
+                    UpdateBy = Session.CurrentUser?.Id ?? systemAdminUserId
+                });
+            }
+        }
+
         // ── Save ──────────────────────────────────────────────────────────────
         private bool ValidateForm()
         {
@@ -309,6 +341,51 @@ namespace Etmam
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
+            string? validateCategory = Categories.FirstOrDefault(c => c.Label == cmbCategory.Text).Value;
+            if (validateCategory != null && ScopedCategories.Contains(validateCategory)
+                && !chkGeneralDiscipline.Checked && ReadCheckedDisciplineIds().Count == 0)
+            {
+                XtraMessageBox.Show("يرجى اختيار تخصص واحد على الأقل، أو تحديد \"عام\".", "تحقق من البيانات",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>Blocks saving a procedure whose (project, discipline) scope overlaps an existing
+        /// active procedure of the same category — a null ProjectId ("كل المشاريع") or an empty
+        /// discipline set ("عام") overlaps everything, by definition. Only meaningful for categories in
+        /// ScopedCategories (the ones whose sync class actually filters by project/discipline).</summary>
+        private bool CheckForConflict(int? projectId, List<int> disciplineIds, string category)
+        {
+            var others = DC.WorkflowDefinitionList
+                .GetBy("IsDelete = 0 AND IsActive = 1 AND Category = @cat AND Id <> @selfId",
+                    new { cat = category, selfId = _definitionId });
+            if (others.Count == 0) return true;
+
+            var otherIds = others.Select(o => o.Id).ToList();
+            var otherDisciplinesByDef = DC.WorkflowDefinitionDisciplineList
+                .GetBy($"WorkflowDefinitionId IN ({string.Join(",", otherIds)})")
+                .GroupBy(l => l.WorkflowDefinitionId)
+                .ToDictionary(g => g.Key, g => g.Select(l => l.DisciplineId).ToHashSet());
+
+            var thisDisciplineSet = disciplineIds.ToHashSet();
+
+            foreach (var other in others)
+            {
+                bool projectOverlap = projectId == null || other.ProjectId == null || projectId == other.ProjectId;
+                if (!projectOverlap) continue;
+
+                bool otherIsGeneral = !otherDisciplinesByDef.TryGetValue(other.Id, out var otherSet) || otherSet.Count == 0;
+                bool disciplineOverlap = thisDisciplineSet.Count == 0 || otherIsGeneral || thisDisciplineSet.Overlaps(otherSet!);
+                if (!disciplineOverlap) continue;
+
+                XtraMessageBox.Show(
+                    $"يتعارض نطاق هذا الإجراء (المشروع/التخصص) مع الإجراء \"{other.Name}\" الموجود بالفعل.\nيرجى تضييق نطاق أحد الإجراءين حتى لا يتداخلا.",
+                    "تعارض في نطاق الإجراء", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
             return true;
         }
 
@@ -319,13 +396,23 @@ namespace Etmam
 
             if (!ValidateForm()) return;
 
+            string? category = Categories.FirstOrDefault(c => c.Label == cmbCategory.Text).Value;
+            int? projectId = lookUpEditProject.EditValue as int?;
+            var disciplineIds = chkGeneralDiscipline.Checked ? new List<int>() : ReadCheckedDisciplineIds();
+
+            if (category != null && ScopedCategories.Contains(category) && !CheckForConflict(projectId, disciplineIds, category))
+                return;
+
+            var handle = ShowOverlay();
             try
             {
                 var def = new WorkflowDefinitionList
                 {
                     Name = txtName.Text.Trim(),
                     Description = txtDescription.Text.Trim(),
-                    IsActive = chkActive.Checked
+                    IsActive = chkActive.Checked,
+                    Category = category,
+                    ProjectId = projectId
                 };
 
                 if (_definitionId == 0)
@@ -335,6 +422,7 @@ namespace Etmam
                     def.CreatedBy = Session.CurrentUser?.Id ?? 1;
                     def.IsDelete = false;
                     _definitionId = DC.WorkflowDefinitionList.Add(def);
+                    InitializeWorkflowAccessRows(_definitionId);
                 }
                 else
                 {
@@ -390,6 +478,23 @@ namespace Etmam
                     }
                 }
 
+                // Replace this definition's discipline scope the same delete-then-reinsert way as its
+                // steps above — an empty disciplineIds list (either "عام" was checked, or the category
+                // isn't in ScopedCategories) correctly leaves no rows, meaning "applies to every discipline".
+                DC.WorkflowDefinitionDisciplineList.DeleteBy("WorkflowDefinitionId = @id", new { id = _definitionId });
+                foreach (var disciplineId in disciplineIds)
+                {
+                    DC.WorkflowDefinitionDisciplineList.Add(new WorkflowDefinitionDisciplineList
+                    {
+                        WorkflowDefinitionId = _definitionId,
+                        DisciplineId = disciplineId,
+                        CreatedDate = DateTime.Now,
+                        CreatedMachine = Session.Machine,
+                        CreatedBy = Session.CurrentUser?.Id ?? 1,
+                        IsDelete = false
+                    });
+                }
+
                 XtraMessageBox.Show("تم حفظ الإجراء بنجاح ✓", "حفظ",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 DialogResult = DialogResult.OK;
@@ -400,6 +505,17 @@ namespace Etmam
                 XtraMessageBox.Show($"خطأ أثناء الحفظ:\n{ex.Message}", "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
+        }
+
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

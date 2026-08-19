@@ -1,0 +1,122 @@
+@page "/inventory/units"
+@rendermode InteractiveServer
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>وحدات القياس - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">وحدات القياس</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        وحدة جديدة
+    </MudButton>
+</MudStack>
+
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Placeholder="بحث..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Class="mb-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTable Items="@FilteredUnits" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>الوصف</MudTh>
+            <MudTh>الاختصار</MudTh>
+            <MudTh>المجموعة</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="الوصف">@context.Description</MudTd>
+            <MudTd DataLabel="الاختصار">@context.Abbreviation</MudTd>
+            <MudTd DataLabel="المجموعة">@context.Category</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteUnit(context))" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا توجد وحدات.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<UnitDto> _units = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private string _search = "";
+
+    private IEnumerable<UnitDto> FilteredUnits =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _units
+            : _units.Where(u => (u.Description ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)
+                              || (u.Abbreviation ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _units = await Api.GetUnitsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل وحدات القياس من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchChanged(string value) => _search = value;
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<UnitEditDialog> { { x => x.UnitId, null } };
+        var dialog = await DialogService.ShowAsync<UnitEditDialog>("وحدة جديدة", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<UnitEditDialog> { { x => x.UnitId, id } };
+        var dialog = await DialogService.ShowAsync<UnitEditDialog>("تعديل وحدة", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteUnit(UnitDto unit)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف الوحدة \"{unit.Description}\"؟",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Api.DeleteUnitAsync(unit.Id);
+            Snackbar.Add("تم حذف الوحدة.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+}

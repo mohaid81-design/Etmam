@@ -8,6 +8,8 @@ using DevExpress.XtraEditors;
 using DevExpress.XtraBars;
 using System.IO;
 using DevExpress.XtraGrid;
+using DevExpress.XtraSplashScreen;
+using Microsoft.Data.SqlClient;
 using Core;
 
 namespace Etmam
@@ -119,24 +121,33 @@ namespace Etmam
         public virtual void HandleToolbarCopy()
         {
             if (CurrentProjectId == 0) return;
-            var lastReport = DC.DailyReport.GetBy(
-                "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
-                new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
 
-            if (lastReport == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه لهذا المشروع.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+                var lastReport = DC.DailyReport.GetBy(
+                    "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
+                    new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
 
-            int count = CopyFromPrevious(lastReport.Id);
-            if (count > 0)
-            {
-                XtraMessageBox.Show($"تم نسخ {count} سجلات بنجاح من تقرير يوم {lastReport.ReportDate:yyyy/MM/dd}.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (lastReport == null)
+                {
+                    XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه لهذا المشروع.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                int count = CopyFromPrevious(lastReport.Id);
+                if (count > 0)
+                {
+                    XtraMessageBox.Show($"تم نسخ {count} سجلات بنجاح من تقرير يوم {lastReport.ReportDate:yyyy/MM/dd}.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    XtraMessageBox.Show("تم نسخ كافة البيانات المتاحة مسبقاً أو لا توجد بيانات جديدة للنسخ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
-            else
+            finally
             {
-                XtraMessageBox.Show("تم نسخ كافة البيانات المتاحة مسبقاً أو لا توجد بيانات جديدة للنسخ.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CloseOverlay(handle);
             }
         }
 
@@ -182,12 +193,15 @@ namespace Etmam
             }
         }
 
-        public override void SaveData(int dailyReportId)
+        public override void SaveData(int dailyReportId, SqlTransaction? transaction = null)
         {
             var helper = DC.GetHelper<Core.DailyReportPhoto>();
-            foreach (var id in GetDeletedIds()) helper.Delete(id);
+            var deletedIds = GetDeletedIds();
+            if (deletedIds.Count > 0) helper.DeleteRange(deletedIds, transaction);
             ClearDeletedIds();
 
+            var toAdd = new List<Core.DailyReportPhoto>();
+            var toEdit = new List<Core.DailyReportPhoto>();
             foreach (var item in DataSource)
             {
                 item.DailyReportId = dailyReportId;
@@ -196,16 +210,18 @@ namespace Etmam
                     item.CreatedDate = DateTime.Now;
                     item.CreatedMachine = Session.Machine;
                     item.CreatedBy = Session.CurrentUser?.Id ?? 0;
-                    helper.Add(item);
+                    toAdd.Add(item);
                 }
                 else
                 {
                     item.UpdateDate = DateTime.Now;
                     item.UpdateMachine = Session.Machine;
                     item.UpdateBy = Session.CurrentUser?.Id ?? 0;
-                    helper.Edit(item.Id, item);
+                    toEdit.Add(item);
                 }
             }
+            if (toAdd.Count > 0) helper.AddRange(toAdd, transaction);
+            if (toEdit.Count > 0) helper.EditRange(toEdit, transaction);
         }
 
         private readonly Dictionary<Core.DailyReportPhoto, Image> _imageCache = new Dictionary<Core.DailyReportPhoto, Image>();
@@ -326,16 +342,24 @@ namespace Etmam
 
         public override void LoadData()
         {
-            foreach (var img in _imageCache.Values)
+            var handle = ShowOverlay();
+            try
             {
-                img?.Dispose();
-            }
-            _imageCache.Clear();
+                foreach (var img in _imageCache.Values)
+                {
+                    img?.Dispose();
+                }
+                _imageCache.Clear();
 
-            if (CurrentDailyReportId == 0) return;
-            var list = DC.GetHelper<Core.DailyReportPhoto>().GetBy("DailyReportId = @id AND IsDelete = 0", new { id = CurrentDailyReportId });
-            DataSource = new System.ComponentModel.BindingList<Core.DailyReportPhoto>(list);
-            InitializeBaseGrid();
+                if (CurrentDailyReportId == 0) return;
+                var list = DC.GetHelper<Core.DailyReportPhoto>().GetBy("DailyReportId = @id AND IsDelete = 0", new { id = CurrentDailyReportId });
+                DataSource = new System.ComponentModel.BindingList<Core.DailyReportPhoto>(list);
+                InitializeBaseGrid();
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         private void AddFiles(string[] fileNames)
@@ -358,5 +382,13 @@ namespace Etmam
 
         protected bool CopyFilter(Core.DailyReportPhoto item) => true;
         protected Func<Core.DailyReportPhoto, Core.DailyReportPhoto, bool> GetDuplicatePredicate() => (a, b) => false; // Photos are unique by nature
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
+        }
     }
 }

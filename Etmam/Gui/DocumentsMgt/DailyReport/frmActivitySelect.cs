@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Core;
 using Data;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
@@ -227,7 +228,11 @@ namespace Etmam
             using (var dlg = new frmActivityAddEdit(FilterCategory))
             {
                 if (dlg.ShowDialog() == DialogResult.OK)
-                    LoadData();
+                {
+                    var handle = ShowOverlay();
+                    try { LoadData(); }
+                    finally { CloseOverlay(handle); }
+                }
             }
         }
 
@@ -244,7 +249,11 @@ namespace Etmam
                 using (var dlg = new frmActivityAddEdit(vm.Activity))
                 {
                     if (dlg.ShowDialog() == DialogResult.OK)
-                        LoadData();
+                    {
+                        var handle = ShowOverlay();
+                        try { LoadData(); }
+                        finally { CloseOverlay(handle); }
+                    }
                 }
             }
         }
@@ -254,10 +263,11 @@ namespace Etmam
             var vm = gridView1.GetFocusedRow() as ActivityProgressViewModel;
             if (vm == null || vm.Activity == null) return;
             var row = vm.Activity;
- 
+
             if (XtraMessageBox.Show("هل أنت متأكد من حذف هذا النشاط؟", "تأكيد الحذف",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
+                var handle = ShowOverlay();
                 try
                 {
                     row.IsDelete        = true;
@@ -271,7 +281,16 @@ namespace Etmam
                 {
                     XtraMessageBox.Show($"خطأ في الحذف: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+                finally { CloseOverlay(handle); }
             }
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

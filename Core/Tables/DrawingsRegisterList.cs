@@ -20,10 +20,11 @@ namespace Core
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
         public int? Num { get; set; }
+        public string? RegisterNo { get; set; }
         public int? Rev { get; set; }
         public DateTime? PreparedDate { get; set; }
         public int? Type { get; set; }
-        public string? Category { get; set; }
+        public int? CategoryId { get; set; }
         public int? SubCategory { get; set; }
         public string? Description { get; set; }
         public int? Building { get; set; }

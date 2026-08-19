@@ -19,7 +19,7 @@ namespace Core
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public DateTime? ActuaStart { get; set; }
-        public DateTime? ActualEnd{ get; set; }
+        public DateTime? ActualEnd { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
         public DateTime? UpdateDate { get; set; }

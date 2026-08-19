@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using Core;
 using DevExpress.XtraTreeList;
+using DevExpress.XtraSplashScreen;
 using Data;
 
 namespace Etmam
@@ -65,8 +66,13 @@ namespace Etmam
         private void BbiAdd_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             int prjId = CurrentProjectId > 0 ? CurrentProjectId : (Session.SelectedProjectId ?? 1);
-            
-            using (var frm = new frmImportSchedule(prjId))
+
+            var handle = ShowOverlay();
+            frmImportSchedule frm;
+            try { frm = new frmImportSchedule(prjId); }
+            finally { CloseOverlay(handle); }
+
+            using (frm)
             {
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
@@ -77,21 +83,29 @@ namespace Etmam
 
         public void LoadData(int projectId = 0)
         {
-            if (projectId == 0) projectId = CurrentProjectId;
-            
-            DataSource.Clear();
-            List<ScheduleDetails> data;
-            
-            if (projectId > 0)
-                data = DC.ScheduleDetails.GetBy("PrjId = @projectId", new { projectId });
-            else
-                data = DC.ScheduleDetails.GetAll();
+            var handle = ShowOverlay();
+            try
+            {
+                if (projectId == 0) projectId = CurrentProjectId;
 
-            foreach (var item in data) DataSource.Add(item);
+                DataSource.Clear();
+                List<ScheduleDetails> data;
 
-            treeList1.ExpandAll();
-            treeList1.BestFitColumns();
-            UpdateRecordCount();
+                if (projectId > 0)
+                    data = DC.ScheduleDetails.GetBy("PrjId = @projectId", new { projectId });
+                else
+                    data = DC.ScheduleDetails.GetAll();
+
+                foreach (var item in data) DataSource.Add(item);
+
+                treeList1.ExpandAll();
+                treeList1.BestFitColumns();
+                UpdateRecordCount();
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public override void OnProjectChanged()
@@ -124,13 +138,24 @@ namespace Etmam
                 if (activity != null && scheduleItem != null)
                 {
                     activity.ScheduleActivityId = scheduleItem.Id;
-                    DC.ActivityList.Edit(activity.Id, activity);
-                    
+
+                    var handle = ShowOverlay();
+                    try { DC.ActivityList.Edit(activity.Id, activity); }
+                    finally { CloseOverlay(handle); }
+
                     OnLinkCreated?.Invoke(this, EventArgs.Empty);
-                    
+
                     XtraMessageBox.Show("تم ربط النشاط بالجدول الزمني بنجاح", "تأكيد", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
+        }
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 

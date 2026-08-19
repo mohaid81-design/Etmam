@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using DevExpress.XtraEditors;
+using Microsoft.Data.SqlClient;
 using Data;
 
 namespace Etmam
@@ -62,9 +63,11 @@ namespace Etmam
         public virtual int CopyFromPrevious(int lastReportId) => 0;
 
         /// <summary>
-        /// Standard entry point for saving data.
+        /// Standard entry point for saving data. An optional transaction lets the parent form
+        /// (frmDailyReport) wrap the header save and every sub-control's save in one
+        /// connection/transaction instead of each opening its own.
         /// </summary>
-        public virtual void SaveData(int dailyReportId) { }
+        public virtual void SaveData(int dailyReportId, SqlTransaction? transaction = null) { }
 
         /// <summary>
         /// Standard entry point for loading data.

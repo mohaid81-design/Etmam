@@ -87,7 +87,7 @@ namespace Etmam
                 {
                     case "DailyReport": return new ucDailyReports();
                     case "Dashboard":   return new ucDashboard();
-                    case "Drawings":    return new ucDwgMgt();
+                    case "Drawings":    return new ucDrawingsLog();
                     case "MAR":         return new ucMAR();
                     case "MIR":         return new ucMIR();
                     case "CIR":         return new ucCIR();

@@ -33,5 +33,12 @@ namespace Core
         /// Parameter: the new project ID (null = no project selected).
         /// </summary>
         public static event Action<int?>? ProjectChanged;
+
+        /// <summary>
+        /// True when the current user's project access is limited to exactly one project.
+        /// Set once at login/project-list load. When true, project-scoped list screens
+        /// should skip PrjId filtering and load all elements by default.
+        /// </summary>
+        public static bool IsSingleProjectUser { get; set; }
     }
 }

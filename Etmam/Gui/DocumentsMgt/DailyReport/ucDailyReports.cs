@@ -4,12 +4,16 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraSplashScreen;
 using Core;
+using Data;
 
 namespace Etmam
 {
     public partial class ucDailyReports : BaseUserControl
     {
+        private bool _canManage;
+
         protected System.ComponentModel.BindingList<Core.DailyReport> DataSource { get; set; } = new System.ComponentModel.BindingList<Core.DailyReport>();
         protected System.Collections.Generic.List<int> DeletedIds { get; } = new System.Collections.Generic.List<int>();
 
@@ -112,6 +116,14 @@ namespace Etmam
         public ucDailyReports()
         {
             InitializeComponent();
+            if (DesignMode) return;
+
+            _canManage = PermissionService.HasPermission(PermNames.DailyReport);
+            bbiNew.Enabled = _canManage;
+            bbiEdit.Enabled = _canManage;
+            bbiDelete.Enabled = _canManage;
+            bbiPrint.Enabled = _canManage;
+
             DesignSystem.ApplyCairoFont(this);
             gridView1.DoubleClick += GridView1_DoubleClick;
             this.Load += UcDailyReports_Load;
@@ -163,6 +175,7 @@ namespace Etmam
 
         public async Task LoadDataAsync()
         {
+            var handle = ShowOverlay();
             try
             {
                 gridControl1.BeginUpdate();
@@ -183,6 +196,7 @@ namespace Etmam
             finally
             {
                 gridControl1.EndUpdate();
+                CloseOverlay(handle);
             }
         }
 
@@ -192,18 +206,41 @@ namespace Etmam
             await LoadDataAsync();
         }
 
+        // كل نقاط الدخول (bbiNew/bbiEdit/bbiDelete) تتحقق من الصلاحية بنفسها لأن الشاشة لا تمر
+        // بدالّة فتح موحّدة واحدة — النقر المزدوج في وضع الاختيار (IsSelectionMode) لا يفتح نموذج
+        // تعديل فعلي (فقط يُرجع رقم التقرير)، لذا لا حاجة لحمايته.
         private void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            frmDailyReport frm = new frmDailyReport();
+            if (!_canManage)
+            {
+                XtraMessageBox.Show("ليس لديك صلاحية إدارة التقرير اليومي (DR).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var handle = ShowOverlay();
+            frmDailyReport frm;
+            try { frm = new frmDailyReport(); }
+            finally { CloseOverlay(handle); }
             frm.FormClosed += async (s, args) => await LoadDataAsync();
             frm.Show();
         }
 
         private void bbiEdit_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (!_canManage)
+            {
+                XtraMessageBox.Show("ليس لديك صلاحية إدارة التقرير اليومي (DR).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (gridView1.GetFocusedRow() is Core.DailyReport report)
             {
-                frmDailyReport frm = new frmDailyReport(report.Id);
+                var handle = ShowOverlay();
+                frmDailyReport frm;
+                try { frm = new frmDailyReport(report.Id); }
+                finally { CloseOverlay(handle); }
                 frm.FormClosed += async (s, args) => await LoadDataAsync();
                 frm.Show();
             }
@@ -211,12 +248,21 @@ namespace Etmam
 
         private async void bbiDelete_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (!_canManage)
+            {
+                XtraMessageBox.Show("ليس لديك صلاحية إدارة التقرير اليومي (DR).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (gridView1.GetFocusedRow() is Core.DailyReport report)
             {
                 if (XtraMessageBox.Show("هل أنت متأكد من حذف هذا التقرير؟", "تأكيد الحذف", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     // Use centralized cascading delete
-                    DC.DeleteDailyReport(report.Id);
+                    var handle = ShowOverlay();
+                    try { DC.DeleteDailyReport(report.Id); }
+                    finally { CloseOverlay(handle); }
 
                     await LoadDataAsync();
                 }
@@ -232,12 +278,22 @@ namespace Etmam
         {
             if (gridView1.GetFocusedRow() is Core.DailyReport report)
             {
-                await DailyReportPrinter.PrintAsync(report.Id, this);
+                var handle = ShowOverlay();
+                try { await DailyReportPrinter.PrintAsync(report.Id, this); }
+                finally { CloseOverlay(handle); }
             }
             else
             {
                 gridControl1.ShowPrintPreview();
             }
+        }
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

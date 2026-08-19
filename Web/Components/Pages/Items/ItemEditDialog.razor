@@ -1,0 +1,129 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل صنف" : "صنف جديد")</TitleContent>
+    <DialogContent>
+        @if (_isEdit && !string.IsNullOrEmpty(_currentCode))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">الكود: @_currentCode</MudText>
+        }
+        <MudForm @ref="_form" Model="_model">
+            <MudTextField @bind-Value="_model.Name" Label="اسم الصنف" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Description" Label="الوصف" Variant="Variant.Outlined" Lines="2" Class="mb-3" />
+            <MudSelect T="int?" @bind-Value="_model.CategoryId" Label="التصنيف" Variant="Variant.Outlined" Required="true" Class="mb-3">
+                @foreach (var category in _categories)
+                {
+                    <MudSelectItem T="int?" Value="category.Id">@category.Code @category.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="int?" @bind-Value="_model.UnitId" Label="وحدة القياس" Variant="Variant.Outlined" Required="true" Class="mb-3">
+                @foreach (var unit in _units)
+                {
+                    <MudSelectItem T="int?" Value="unit.Id">@unit.Description</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSwitch @bind-Value="_model.IsActive" Label="نشط" Color="Color.Primary" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? ItemId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly FormModel _model = new() { IsActive = true };
+    private List<ItemCategoryDto> _categories = [];
+    private List<UnitDto> _units = [];
+    private string? _currentCode;
+    private bool _isEdit;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await Api.GetItemCategoriesAsync();
+        _units = await Api.GetUnitsAsync();
+
+        _isEdit = ItemId is > 0;
+        if (_isEdit)
+        {
+            var dto = await Api.GetItemAsync(ItemId!.Value);
+            if (dto is not null)
+            {
+                _model.Name = dto.Name;
+                _model.Description = dto.Description;
+                _model.CategoryId = dto.CategoryId;
+                _model.UnitId = dto.UnitId;
+                _model.IsActive = dto.IsActive ?? true;
+                _currentCode = dto.Code;
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdateItemAsync(ItemId!.Value, new ItemUpdateRequest
+                {
+                    Name = _model.Name,
+                    Description = _model.Description,
+                    CategoryId = _model.CategoryId,
+                    UnitId = _model.UnitId,
+                    IsActive = _model.IsActive,
+                });
+            }
+            else
+            {
+                await Api.CreateItemAsync(new ItemCreateRequest
+                {
+                    Name = _model.Name,
+                    Description = _model.Description,
+                    CategoryId = _model.CategoryId,
+                    UnitId = _model.UnitId,
+                    IsActive = _model.IsActive,
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class FormModel
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public int? CategoryId { get; set; }
+        public int? UnitId { get; set; }
+        public bool IsActive { get; set; }
+    }
+}

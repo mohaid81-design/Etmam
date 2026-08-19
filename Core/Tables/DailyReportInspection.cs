@@ -9,7 +9,7 @@ namespace Core
         public string? InspectionDescription { get; set; }
         public string? Status { get; set; } // Approved, Rejected, etc.
         public string? Note { get; set; }
-        
+
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
         public DateTime? UpdateDate { get; set; }

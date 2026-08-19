@@ -10,5 +10,15 @@
     <Folder Include="Query\" />
   </ItemGroup>
 
+  <!-- Explicit exclude: protects against concurrent agent builds that override
+       BaseIntermediateOutputPath to a sibling subfolder under obj\ (e.g. obj\_agentX\),
+       which narrows the SDK's default item-exclude glob so it no longer covers the
+       whole obj\ tree, letting other agents' generated obj\_agentY\**\*.cs leak into
+       this compile (CS0579 duplicate AssemblyInfo attribute errors). -->
+  <ItemGroup>
+    <Compile Remove="bin\**" />
+    <Compile Remove="obj\**" />
+  </ItemGroup>
+
 
 </Project>

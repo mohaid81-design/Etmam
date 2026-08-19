@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Core;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
+using Microsoft.Data.SqlClient;
 
 namespace Etmam
 {
@@ -59,7 +60,7 @@ namespace Etmam
             UpdateButtonStates();
         }
 
-        public override void SaveData(int marId)
+        public override void SaveData(int marId, SqlTransaction? transaction = null)
         {
             gridView1.CloseEditor();
             gridView1.UpdateCurrentRow();

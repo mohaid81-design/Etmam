@@ -1,105 +1,109 @@
-namespace Etmam
+﻿namespace Etmam
 {
     partial class ucDrawingsAddEdit
     {
+        /// <summary> 
+        /// Required designer variable.
+        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
+            {
                 components.Dispose();
+            }
             base.Dispose(disposing);
         }
 
+        #region Component Designer generated code
+
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
+        /// </summary>
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ucDrawingsAddEdit));
             barManager1 = new DevExpress.XtraBars.BarManager(components);
-            bar1 = new DevExpress.XtraBars.Bar();
+            bar2 = new DevExpress.XtraBars.Bar();
             bbiAdd = new DevExpress.XtraBars.BarButtonItem();
             bbiDelete = new DevExpress.XtraBars.BarButtonItem();
-            bbiOpen = new DevExpress.XtraBars.BarButtonItem();
-            bbiDownload = new DevExpress.XtraBars.BarButtonItem();
-            barStaticItem1 = new DevExpress.XtraBars.BarStaticItem();
             barDockControlTop = new DevExpress.XtraBars.BarDockControl();
             barDockControlBottom = new DevExpress.XtraBars.BarDockControl();
             barDockControlLeft = new DevExpress.XtraBars.BarDockControl();
             barDockControlRight = new DevExpress.XtraBars.BarDockControl();
+            svgImageCollection1 = new DevExpress.Utils.SvgImageCollection(components);
             imageCollection1 = new DevExpress.Utils.ImageCollection(components);
-            gridControl1 = new DevExpress.XtraGrid.GridControl();
-            gridView1 = new DevExpress.XtraGrid.Views.Grid.GridView();
-            colFileName = new DevExpress.XtraGrid.Columns.GridColumn();
-            colFileType = new DevExpress.XtraGrid.Columns.GridColumn();
-            colFileSizeKB = new DevExpress.XtraGrid.Columns.GridColumn();
-            colUploadDate = new DevExpress.XtraGrid.Columns.GridColumn();
-            colUploadedBy = new DevExpress.XtraGrid.Columns.GridColumn();
-            colComment = new DevExpress.XtraGrid.Columns.GridColumn();
+            gridControl = new DevExpress.XtraGrid.GridControl();
+            gridView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            colBuilding = new DevExpress.XtraGrid.Columns.GridColumn();
+            colFloor = new DevExpress.XtraGrid.Columns.GridColumn();
+            colNum = new DevExpress.XtraGrid.Columns.GridColumn();
+            colRev = new DevExpress.XtraGrid.Columns.GridColumn();
+            colDescrp = new DevExpress.XtraGrid.Columns.GridColumn();
+            colConsultantDecision = new DevExpress.XtraGrid.Columns.GridColumn();
+            repositoryItemComboBoxStatus = new DevExpress.XtraEditors.Repository.RepositoryItemComboBox();
+            colReSubmittedRejectedItems = new DevExpress.XtraGrid.Columns.GridColumn();
+            repositoryItemCheckEdit1 = new DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit();
+            colSigningCompleted = new DevExpress.XtraGrid.Columns.GridColumn();
+            colConsultantNotes = new DevExpress.XtraGrid.Columns.GridColumn();
             ((System.ComponentModel.ISupportInitialize)barManager1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)svgImageCollection1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)imageCollection1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)gridControl1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)gridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)gridView).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)repositoryItemComboBoxStatus).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)repositoryItemCheckEdit1).BeginInit();
             SuspendLayout();
             // 
             // barManager1
             // 
-            barManager1.Bars.AddRange(new DevExpress.XtraBars.Bar[] { bar1 });
+            barManager1.Bars.AddRange(new DevExpress.XtraBars.Bar[] { bar2 });
             barManager1.DockControls.Add(barDockControlTop);
             barManager1.DockControls.Add(barDockControlBottom);
             barManager1.DockControls.Add(barDockControlLeft);
             barManager1.DockControls.Add(barDockControlRight);
             barManager1.Form = this;
-            barManager1.Images = imageCollection1;
-            barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] { bbiAdd, bbiDelete, bbiOpen, bbiDownload, barStaticItem1 });
-            barManager1.MaxItemId = 10;
+            barManager1.Images = svgImageCollection1;
+            barManager1.Items.AddRange(new DevExpress.XtraBars.BarItem[] { bbiAdd, bbiDelete });
+            barManager1.MainMenu = bar2;
+            barManager1.MaxItemId = 26;
             barManager1.RightToLeft = DevExpress.Utils.DefaultBoolean.True;
             // 
-            // bar1
+            // bar2
             // 
-            bar1.BarName = "Tools";
-            bar1.DockCol = 0;
-            bar1.DockRow = 0;
-            bar1.DockStyle = DevExpress.XtraBars.BarDockStyle.Right;
-            bar1.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] { new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, bbiAdd, DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu), new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, bbiDelete, DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu), new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, bbiOpen, DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu), new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, bbiDownload, DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu) });
-            bar1.OptionsBar.AllowQuickCustomization = false;
-            bar1.OptionsBar.DrawDragBorder = false;
-            bar1.OptionsBar.UseWholeRow = true;
-            bar1.Text = "Tools";
+            bar2.BarName = "Main menu";
+            bar2.DockCol = 0;
+            bar2.DockRow = 0;
+            bar2.DockStyle = DevExpress.XtraBars.BarDockStyle.Top;
+            bar2.LinksPersistInfo.AddRange(new DevExpress.XtraBars.LinkPersistInfo[] { new DevExpress.XtraBars.LinkPersistInfo(DevExpress.XtraBars.BarLinkUserDefines.PaintStyle, bbiAdd, DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu), new DevExpress.XtraBars.LinkPersistInfo(bbiDelete) });
+            bar2.OptionsBar.AllowQuickCustomization = false;
+            bar2.OptionsBar.DrawDragBorder = false;
+            bar2.OptionsBar.MultiLine = true;
+            bar2.OptionsBar.UseWholeRow = true;
+            bar2.Text = "Main menu";
             // 
             // bbiAdd
             // 
-            bbiAdd.Caption = "إضافة مرفق";
+            bbiAdd.Caption = "إضافة";
             bbiAdd.Id = 0;
             bbiAdd.ImageOptions.ImageIndex = 0;
             bbiAdd.Name = "bbiAdd";
+            bbiAdd.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph;
             // 
             // bbiDelete
             // 
             bbiDelete.Caption = "حذف";
-            bbiDelete.Id = 1;
-            bbiDelete.ImageOptions.ImageIndex = 3;
+            bbiDelete.Id = 3;
+            bbiDelete.ImageOptions.ImageIndex = 1;
             bbiDelete.Name = "bbiDelete";
-            // 
-            // bbiOpen
-            // 
-            bbiOpen.Caption = "فتح";
-            bbiOpen.Id = 2;
-            bbiOpen.ImageOptions.ImageIndex = 8;
-            bbiOpen.Name = "bbiOpen";
-            // 
-            // bbiDownload
-            // 
-            bbiDownload.Caption = "تنزيل";
-            bbiDownload.Id = 3;
-            bbiDownload.ImageOptions.ImageIndex = 7;
-            bbiDownload.Name = "bbiDownload";
-            // 
-            // barStaticItem1
-            // 
-            barStaticItem1.Alignment = DevExpress.XtraBars.BarItemLinkAlignment.Right;
-            barStaticItem1.Caption = "المرفقات: 0";
-            barStaticItem1.Id = 4;
-            barStaticItem1.Name = "barStaticItem1";
+            bbiDelete.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu;
             // 
             // barDockControlTop
             // 
@@ -107,31 +111,36 @@ namespace Etmam
             barDockControlTop.Dock = DockStyle.Top;
             barDockControlTop.Location = new Point(0, 0);
             barDockControlTop.Manager = barManager1;
-            barDockControlTop.Size = new Size(1000, 0);
+            barDockControlTop.Size = new Size(1349, 28);
             // 
             // barDockControlBottom
             // 
             barDockControlBottom.CausesValidation = false;
             barDockControlBottom.Dock = DockStyle.Bottom;
-            barDockControlBottom.Location = new Point(0, 400);
+            barDockControlBottom.Location = new Point(0, 360);
             barDockControlBottom.Manager = barManager1;
-            barDockControlBottom.Size = new Size(1000, 0);
+            barDockControlBottom.Size = new Size(1349, 0);
             // 
             // barDockControlLeft
             // 
             barDockControlLeft.CausesValidation = false;
             barDockControlLeft.Dock = DockStyle.Left;
-            barDockControlLeft.Location = new Point(0, 0);
+            barDockControlLeft.Location = new Point(0, 28);
             barDockControlLeft.Manager = barManager1;
-            barDockControlLeft.Size = new Size(0, 400);
+            barDockControlLeft.Size = new Size(0, 332);
             // 
             // barDockControlRight
             // 
             barDockControlRight.CausesValidation = false;
             barDockControlRight.Dock = DockStyle.Right;
-            barDockControlRight.Location = new Point(968, 0);
+            barDockControlRight.Location = new Point(1349, 28);
             barDockControlRight.Manager = barManager1;
-            barDockControlRight.Size = new Size(32, 400);
+            barDockControlRight.Size = new Size(0, 332);
+            // 
+            // svgImageCollection1
+            // 
+            svgImageCollection1.Add("actions_add", "image://svgimages/icon builder/actions_add.svg");
+            svgImageCollection1.Add("Delete.svg", (DevExpress.Utils.Svg.SvgImage)resources.GetObject("svgImageCollection1.Delete.svg"));
             // 
             // imageCollection1
             // 
@@ -143,130 +152,189 @@ namespace Etmam
             imageCollection1.Images.SetKeyName(4, "5_Print.png");
             imageCollection1.Images.SetKeyName(5, "6_Search.png");
             imageCollection1.Images.SetKeyName(6, "refresh.png");
-            imageCollection1.InsertImage(Properties.Resources.download_16x162, "download_16x162", typeof(Properties.Resources), 7);
-            imageCollection1.Images.SetKeyName(7, "download_16x162");
-            imageCollection1.InsertImage(Properties.Resources.open_16x161, "open_16x161", typeof(Properties.Resources), 8);
-            imageCollection1.Images.SetKeyName(8, "open_16x161");
+            imageCollection1.InsertImage(Properties.Resources.edit_16x16, "edit_16x16", typeof(Properties.Resources), 7);
+            imageCollection1.Images.SetKeyName(7, "edit_16x16");
+            imageCollection1.Images.SetKeyName(8, "6_Search.png");
+            imageCollection1.InsertImage(Properties.Resources.sortbyinvoice_16x16, "sortbyinvoice_16x16", typeof(Properties.Resources), 9);
+            imageCollection1.Images.SetKeyName(9, "sortbyinvoice_16x16");
             // 
-            // gridControl1
+            // gridControl
             // 
-            gridControl1.Dock = DockStyle.Fill;
-            gridControl1.Location = new Point(0, 0);
-            gridControl1.MainView = gridView1;
-            gridControl1.Name = "gridControl1";
-            gridControl1.Size = new Size(968, 400);
-            gridControl1.TabIndex = 0;
-            gridControl1.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView1 });
+            gridControl.Dock = DockStyle.Fill;
+            gridControl.Location = new Point(0, 28);
+            gridControl.MainView = gridView;
+            gridControl.Name = "gridControl";
+            gridControl.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] { repositoryItemComboBoxStatus, repositoryItemCheckEdit1 });
+            gridControl.Size = new Size(1349, 332);
+            gridControl.TabIndex = 0;
+            gridControl.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { gridView });
             // 
-            // gridView1
+            // gridView
             // 
-            gridView1.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] { colFileName, colFileType, colFileSizeKB, colUploadDate, colUploadedBy, colComment });
-            gridView1.GridControl = gridControl1;
-            gridView1.Name = "gridView1";
-            gridView1.OptionsBehavior.Editable = false;
-            gridView1.OptionsBehavior.ReadOnly = true;
-            gridView1.OptionsSelection.EnableAppearanceFocusedCell = false;
-            gridView1.OptionsView.ShowAutoFilterRow = true;
-            gridView1.OptionsView.ShowColumnHeaders = false;
-            gridView1.OptionsView.ShowGroupPanel = false;
+            gridView.Appearance.HeaderPanel.Font = new Font("Cairo", 8F, FontStyle.Bold);
+            gridView.Appearance.HeaderPanel.FontStyleDelta = FontStyle.Bold;
+            gridView.Appearance.HeaderPanel.ForeColor = Color.Navy;
+            gridView.Appearance.HeaderPanel.Options.UseFont = true;
+            gridView.Appearance.HeaderPanel.Options.UseForeColor = true;
+            gridView.Appearance.HeaderPanel.Options.UseTextOptions = true;
+            gridView.Appearance.HeaderPanel.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            gridView.Appearance.HeaderPanel.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Top;
+            gridView.Appearance.Row.Font = new Font("Cairo", 9F);
+            gridView.Appearance.Row.Options.UseFont = true;
+            gridView.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] { colBuilding, colFloor, colNum, colRev, colDescrp, colConsultantDecision, colReSubmittedRejectedItems, colSigningCompleted, colConsultantNotes });
+            gridView.DetailHeight = 349;
+            gridView.GridControl = gridControl;
+            gridView.Name = "gridView";
+            gridView.OptionsView.ColumnAutoWidth = false;
+            gridView.OptionsView.ColumnHeaderAutoHeight = DevExpress.Utils.DefaultBoolean.True;
+            gridView.OptionsView.ShowGroupPanel = false;
             // 
-            // colFileName
+            // colBuilding
             // 
-            colFileName.Caption = "اسم الملف";
-            colFileName.FieldName = "FileName";
-            colFileName.Name = "colFileName";
-            colFileName.OptionsColumn.AllowEdit = false;
-            colFileName.OptionsColumn.AllowSort = DevExpress.Utils.DefaultBoolean.True;
-            colFileName.Width = 280;
+            colBuilding.Caption = "المبنى";
+            colBuilding.FieldName = "Building";
+            colBuilding.Name = "colBuilding";
+            colBuilding.Visible = true;
+            colBuilding.VisibleIndex = 0;
+            colBuilding.Width = 100;
             // 
-            // colFileType
+            // colFloor
             // 
-            colFileType.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colFileType.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colFileType.Caption = "النوع";
-            colFileType.FieldName = "FileExtension";
-            colFileType.Name = "colFileType";
-            colFileType.Width = 100;
+            colFloor.Caption = "الدور/ الطابق";
+            colFloor.FieldName = "Floor";
+            colFloor.Name = "colFloor";
+            colFloor.Visible = true;
+            colFloor.VisibleIndex = 1;
+            colFloor.Width = 100;
             // 
-            // colFileSizeKB
+            // colNum
             // 
-            colFileSizeKB.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colFileSizeKB.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colFileSizeKB.Caption = "الحجم (KB)";
-            colFileSizeKB.FieldName = "FileSizeKB";
-            colFileSizeKB.Name = "colFileSizeKB";
-            colFileSizeKB.Width = 90;
+            colNum.Caption = "رقم المخطط";
+            colNum.FieldName = "DrawingNumber";
+            colNum.Name = "colNum";
+            colNum.Visible = true;
+            colNum.VisibleIndex = 3;
+            colNum.Width = 200;
             // 
-            // colUploadDate
+            // colRev
             // 
-            colUploadDate.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colUploadDate.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colUploadDate.Caption = "تاريخ الرفع";
-            colUploadDate.DisplayFormat.FormatString = "yyyy/MM/dd HH:mm";
-            colUploadDate.DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
-            colUploadDate.FieldName = "UploadDate";
-            colUploadDate.Name = "colUploadDate";
-            colUploadDate.Width = 130;
+            colRev.AppearanceCell.Options.UseTextOptions = true;
+            colRev.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            colRev.Caption = "الإصدارة";
+            colRev.FieldName = "Revision";
+            colRev.Name = "colRev";
+            colRev.Visible = true;
+            colRev.VisibleIndex = 4;
+            colRev.Width = 70;
             // 
-            // colUploadedBy
+            // colDescrp
             // 
-            colUploadedBy.AppearanceCell.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colUploadedBy.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            colUploadedBy.Caption = "رُفع بواسطة";
-            colUploadedBy.FieldName = "UploadedBy";
-            colUploadedBy.Name = "colUploadedBy";
-            colUploadedBy.Width = 130;
+            colDescrp.Caption = "وصف المخطط";
+            colDescrp.FieldName = "Description";
+            colDescrp.Name = "colDescrp";
+            colDescrp.Visible = true;
+            colDescrp.VisibleIndex = 2;
+            colDescrp.Width = 250;
             // 
-            // colComment
+            // colConsultantDecision
             // 
-            colComment.Caption = "تعليق";
-            colComment.FieldName = "Comment";
-            colComment.Name = "colComment";
-            colComment.Width = 200;
+            colConsultantDecision.Caption = "قرار الإستشاري";
+            colConsultantDecision.ColumnEdit = repositoryItemComboBoxStatus;
+            colConsultantDecision.FieldName = "ConsultantDecision";
+            colConsultantDecision.Name = "colConsultantDecision";
+            colConsultantDecision.Visible = true;
+            colConsultantDecision.VisibleIndex = 5;
+            colConsultantDecision.Width = 80;
+            // 
+            // repositoryItemComboBoxStatus
+            // 
+            repositoryItemComboBoxStatus.AutoHeight = false;
+            repositoryItemComboBoxStatus.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] { new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo) });
+            repositoryItemComboBoxStatus.Items.AddRange(new object[] { "قيد المراجعة", "معتمد", "معتمد مع تحفظات", "مرفوض" });
+            repositoryItemComboBoxStatus.Name = "repositoryItemComboBoxStatus";
+            // 
+            // colReSubmittedRejectedItems
+            // 
+            colReSubmittedRejectedItems.Caption = "هل تم أعادة التقديم للبنود المرفوضه";
+            colReSubmittedRejectedItems.ColumnEdit = repositoryItemCheckEdit1;
+            colReSubmittedRejectedItems.FieldName = "ReSubmittedRejectedItems";
+            colReSubmittedRejectedItems.Name = "colReSubmittedRejectedItems";
+            colReSubmittedRejectedItems.Visible = true;
+            colReSubmittedRejectedItems.VisibleIndex = 7;
+            colReSubmittedRejectedItems.Width = 100;
+            // 
+            // repositoryItemCheckEdit1
+            // 
+            repositoryItemCheckEdit1.AutoHeight = false;
+            repositoryItemCheckEdit1.Name = "repositoryItemCheckEdit1";
+            // 
+            // colSigningCompleted
+            // 
+            colSigningCompleted.Caption = "هل تم انهاء اجراء التوقيع على طلب الاعتماد";
+            colSigningCompleted.ColumnEdit = repositoryItemCheckEdit1;
+            colSigningCompleted.FieldName = "SigningCompleted";
+            colSigningCompleted.Name = "colSigningCompleted";
+            colSigningCompleted.Visible = true;
+            colSigningCompleted.VisibleIndex = 8;
+            colSigningCompleted.Width = 100;
+            // 
+            // colConsultantNotes
+            // 
+            colConsultantNotes.Caption = "ملاحظات الإستشاري";
+            colConsultantNotes.FieldName = "ConsultantNotes";
+            colConsultantNotes.Name = "colConsultantNotes";
+            colConsultantNotes.Visible = true;
+            colConsultantNotes.VisibleIndex = 6;
+            colConsultantNotes.Width = 257;
             // 
             // ucDrawingsAddEdit
             // 
-            Appearance.Font = new Font("Cairo", 9F);
-            Appearance.Options.UseFont = true;
-            AutoScaleDimensions = new SizeF(6F, 23F);
+            AutoScaleDimensions = new SizeF(6F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(gridControl1);
+            Controls.Add(gridControl);
             Controls.Add(barDockControlLeft);
             Controls.Add(barDockControlRight);
             Controls.Add(barDockControlBottom);
             Controls.Add(barDockControlTop);
+            Margin = new Padding(3, 5, 3, 5);
             Name = "ucDrawingsAddEdit";
             RightToLeft = RightToLeft.Yes;
-            Size = new Size(1000, 400);
+            Size = new Size(1349, 360);
             ((System.ComponentModel.ISupportInitialize)barManager1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)svgImageCollection1).EndInit();
             ((System.ComponentModel.ISupportInitialize)imageCollection1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)gridControl1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)gridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridControl).EndInit();
+            ((System.ComponentModel.ISupportInitialize)gridView).EndInit();
+            ((System.ComponentModel.ISupportInitialize)repositoryItemComboBoxStatus).EndInit();
+            ((System.ComponentModel.ISupportInitialize)repositoryItemCheckEdit1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
-        // ── Field declarations ────────────────────────────────────────────────
+        #endregion
+
         private DevExpress.XtraBars.BarManager barManager1;
-        private DevExpress.XtraBars.Bar bar1;
         private DevExpress.XtraBars.BarButtonItem bbiAdd;
         private DevExpress.XtraBars.BarButtonItem bbiDelete;
-        private DevExpress.XtraBars.BarButtonItem bbiOpen;
-        private DevExpress.XtraBars.BarButtonItem bbiDownload;
-        private DevExpress.XtraBars.BarStaticItem barStaticItem1;
+        private DevExpress.XtraBars.Bar bar2;
         private DevExpress.XtraBars.BarDockControl barDockControlTop;
         private DevExpress.XtraBars.BarDockControl barDockControlBottom;
         private DevExpress.XtraBars.BarDockControl barDockControlLeft;
         private DevExpress.XtraBars.BarDockControl barDockControlRight;
+        private DevExpress.XtraGrid.GridControl gridControl;
+        private DevExpress.XtraGrid.Views.Grid.GridView gridView;
+        private DevExpress.XtraGrid.Columns.GridColumn colBuilding;
+        private DevExpress.XtraGrid.Columns.GridColumn colFloor;
+        private DevExpress.XtraGrid.Columns.GridColumn colNum;
+        private DevExpress.XtraGrid.Columns.GridColumn colRev;
+        private DevExpress.XtraGrid.Columns.GridColumn colDescrp;
+        private DevExpress.XtraGrid.Columns.GridColumn colConsultantDecision;
+        private DevExpress.XtraEditors.Repository.RepositoryItemComboBox repositoryItemComboBoxStatus;
+        private DevExpress.XtraGrid.Columns.GridColumn colReSubmittedRejectedItems;
+        private DevExpress.XtraGrid.Columns.GridColumn colSigningCompleted;
+        private DevExpress.XtraGrid.Columns.GridColumn colConsultantNotes;
+        private DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit repositoryItemCheckEdit1;
         private DevExpress.Utils.ImageCollection imageCollection1;
-
-        internal DevExpress.XtraGrid.GridControl gridControl1;
-        internal DevExpress.XtraGrid.Views.Grid.GridView gridView1;
-        private DevExpress.XtraGrid.Columns.GridColumn colFileName;
-        private DevExpress.XtraGrid.Columns.GridColumn colFileType;
-        private DevExpress.XtraGrid.Columns.GridColumn colFileSizeKB;
-        private DevExpress.XtraGrid.Columns.GridColumn colUploadDate;
-        private DevExpress.XtraGrid.Columns.GridColumn colUploadedBy;
-        private DevExpress.XtraGrid.Columns.GridColumn colComment;
+        private DevExpress.Utils.SvgImageCollection svgImageCollection1;
     }
 }

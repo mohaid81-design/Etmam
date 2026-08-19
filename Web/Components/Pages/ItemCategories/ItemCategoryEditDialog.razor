@@ -1,0 +1,115 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل تصنيف" : "تصنيف جديد")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudTextField @bind-Value="_model.Name" Label="اسم التصنيف" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+            <MudSelect T="int?" @bind-Value="_model.ParentId" Label="التصنيف الأب" Variant="Variant.Outlined" Class="mb-3">
+                <MudSelectItem T="int?" Value="null">— تصنيف رئيسي —</MudSelectItem>
+                @foreach (var category in _availableParents)
+                {
+                    <MudSelectItem T="int?" Value="category.Id">@category.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField @bind-Value="_model.SortId" Label="ترتيب العرض" Variant="Variant.Outlined" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? CategoryId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly FormModel _model = new();
+    private List<ItemCategoryDto> _availableParents = [];
+    private bool _isEdit;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allCategories = await Api.GetItemCategoriesAsync();
+
+        _isEdit = CategoryId is > 0;
+        if (_isEdit)
+        {
+            // A category can't be its own parent - excluded here. (Deeper-cycle prevention, e.g.
+            // picking one's own grandchild, is left to a future pass.)
+            _availableParents = allCategories.Where(c => c.Id != CategoryId!.Value).ToList();
+
+            var dto = await Api.GetItemCategoryAsync(CategoryId!.Value);
+            if (dto is not null)
+            {
+                _model.Name = dto.Name;
+                _model.ParentId = dto.ParentId;
+                _model.SortId = dto.SortId;
+            }
+        }
+        else
+        {
+            _availableParents = allCategories;
+        }
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdateItemCategoryAsync(CategoryId!.Value, new ItemCategoryUpdateRequest
+                {
+                    Name = _model.Name,
+                    ParentId = _model.ParentId,
+                    SortId = _model.SortId,
+                });
+            }
+            else
+            {
+                await Api.CreateItemCategoryAsync(new ItemCategoryCreateRequest
+                {
+                    Name = _model.Name,
+                    ParentId = _model.ParentId,
+                    SortId = _model.SortId,
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class FormModel
+    {
+        public string? Name { get; set; }
+        public int? ParentId { get; set; }
+        public int? SortId { get; set; }
+    }
+}

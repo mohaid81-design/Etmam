@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Core;
 
@@ -69,19 +70,22 @@ namespace Etmam
             ShowReport("سجل طلبات فحص المواد - MIR Register", projectName, records, cols);
         }
 
-        public static void PrintCIR(IEnumerable<DrawingsSubmittalList> records, string projectName = "")
+        public static void PrintCIR(IEnumerable<ConstructionInspectionRequestList> records, string projectName = "")
         {
+            var disciplineNames = Data.DataContext.Shared.DisciplinesList.GetBy("IsDelete = 0")
+                .ToDictionary(d => d.Id, d => d.Name ?? "");
+
             var cols = new[]
             {
-                ("الرقم",                    (Func<DrawingsSubmittalList, string>)(r => r.Num?.ToString() ?? "")),
+                ("الرقم",                    (Func<ConstructionInspectionRequestList, string>)(r => r.Num?.ToString() ?? "")),
                 ("الإصدار",                  r => r.Rev?.ToString() ?? ""),
+                ("الرقم الدفتري",            r => r.RegisterNo ?? ""),
                 ("وصف العمل المطلوب فحصه",   r => r.Description ?? ""),
-                ("التخصص",                   r => r.Category ?? ""),
-                ("مقدم الطلب",               r => r.IssuedBy ?? ""),
+                ("التخصص",                   r => r.DisciplineId != null && disciplineNames.TryGetValue(r.DisciplineId.Value, out var dn) ? dn : ""),
                 ("نتيجة الفحص",              r => r.CSTReviewStatus ?? ""),
                 ("تاريخ الفحص",              r => FormatDate(r.PreparedDate)),
-                ("تاريخ الاستلام",           r => r.CSTDateReceived ?? ""),
-                ("تاريخ الإعادة",            r => r.CSTDateReturned ?? ""),
+                ("تاريخ الإرسال",            r => r.SubmittedDate ?? ""),
+                ("تاريخ ورود الرد",          r => r.CSTReturnedDate ?? ""),
                 ("ملاحظات",                  r => r.CSTReviewComment ?? ""),
             };
             ShowReport("سجل طلبات الفحص الإنشائي - CIR Register", projectName, records, cols);
@@ -89,6 +93,10 @@ namespace Etmam
 
         public static void PrintDrawings(IEnumerable<DrawingsRegisterList> records, string projectName = "")
         {
+            var categoryNames = Data.DataContext.Shared.DrawingsCategory.GetAll()
+                .Where(c => c.Id > 0)
+                .ToDictionary(c => c.Id, c => c.Name ?? "");
+
             var cols = new[]
             {
                 ("رقم المخطط",     (Func<DrawingsRegisterList, string>)(r => r.Num?.ToString() ?? "")),
@@ -96,7 +104,7 @@ namespace Etmam
                 ("اسم المخطط",     r => r.DocName ?? ""),
                 ("الوصف",          r => r.Description ?? ""),
                 ("النوع",          r => MapDrawingType(r.Type)),
-                ("التخصص",         r => r.Category ?? ""),
+                ("التخصص",         r => r.CategoryId != null && categoryNames.TryGetValue(r.CategoryId.Value, out var cn) ? cn : ""),
                 ("الغرض",          r => r.Floor ?? ""),
                 ("حالة الاعتماد",  r => r.CSTReviewStatus ?? ""),
                 ("تاريخ الإصدار",  r => FormatDate(r.PreparedDate)),

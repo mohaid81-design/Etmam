@@ -1,42 +1,18 @@
 <?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Etmam.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="Server" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Mohaid-PC\SQLEXPRESS, 1433</Value>
-    </Setting>
-    <Setting Name="DataBase" Type="System.String" Scope="User">
-      <Value Profile="(Default)">EtmamDB</Value>
-    </Setting>
-    <Setting Name="UserName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">sa</Value>
-    </Setting>
-    <Setting Name="UserPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)">123</Value>
-    </Setting>
-    <Setting Name="ConType" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Web</Value>
-    </Setting>
     <Setting Name="ToastDuration" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1500</Value>
-    </Setting>
-    <Setting Name="WebServer" Type="System.String" Scope="User">
-      <Value Profile="(Default)">SQL1001.site4now.net, 1433</Value>
-    </Setting>
-    <Setting Name="WebDataBase" Type="System.String" Scope="User">
-      <Value Profile="(Default)">db_ac21a3_msg</Value>
-    </Setting>
-    <Setting Name="WebUserName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">db_ac21a3_msg_admin</Value>
-    </Setting>
-    <Setting Name="WebUserPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Etmam_25</Value>
     </Setting>
     <Setting Name="SavedUserName" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="RememberMe" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="ApiBaseUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://localhost:5080/</Value>
     </Setting>
   </Settings>
 </SettingsFile>

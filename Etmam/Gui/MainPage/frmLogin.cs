@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows.Forms;
 using Data;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 using Core;
 
 using Etmam.Properties;
@@ -20,7 +21,8 @@ namespace Etmam
         public frmLogin()
         {
             InitializeComponent();
-            DesignSystem.ApplyFormBranding(this);
+            //DesignSystem.ApplyFormBranding(this);
+            this.Icon = AppIcon.Default;
             ConfigureKeyboardNavigation();
             LoadSettings();
         }
@@ -47,7 +49,7 @@ namespace Etmam
         #endregion
 
         #region Event Handlers
-        private void btnLogin_Click(object sender, EventArgs e)
+        private async void btnLogin_Click(object sender, EventArgs e)
         {
             string userName = txtUserName.Text.Trim();
             string password = txtPassword.Text;
@@ -58,21 +60,15 @@ namespace Etmam
                 return;
             }
 
+            btnLogin.Enabled = false;
+            var handle = ShowOverlay();
             try
             {
-                var user = DC.UsersList.GetBy("UserName = @UserName AND IsActive = 1 AND IsDelete = 0", new { UserName = userName }).FirstOrDefault();
+                var result = await ApiClient.LoginAsync(userName, password);
 
-                if (user != null && Core.Security.PasswordHasher.Verify(password, user.Password))
+                if (result != null)
                 {
-                    // Transparently upgrade legacy plaintext passwords to a hash now that we know it's correct.
-                    // "0000" is left untouched: it's a sentinel meaning "force password change", checked below.
-                    if (!Core.Security.PasswordHasher.IsHashed(user.Password) && user.Password != "0000")
-                    {
-                        user.Password = Core.Security.PasswordHasher.Hash(password);
-                        DC.UsersList.Edit(user.Id, user);
-                    }
-
-                    HandleSuccessfulLogin(user);
+                    await HandleSuccessfulLoginAsync(result);
                 }
                 else
                 {
@@ -81,7 +77,12 @@ namespace Etmam
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show($"حدث خطأ أثناء الاتصال بقاعدة البيانات:\n{ex.Message}", "خطأ في النظام", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                XtraMessageBox.Show($"حدث خطأ أثناء الاتصال بخادم النظام:\n{ex.Message}", "خطأ في النظام", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                CloseOverlay(handle);
+                btnLogin.Enabled = true;
             }
         }
 
@@ -93,29 +94,38 @@ namespace Etmam
         #endregion
 
         #region Logic Methods
-        private void HandleSuccessfulLogin(Core.UsersList user)
+        private async Task HandleSuccessfulLoginAsync(ApiLoginResult result)
         {
-            // Set session data
-            Session.CurrentUser = user;
+            // Set session data. Only the fields actually read via Session.CurrentUser elsewhere
+            // (Id/UserName/FullName/Role/Company) are populated from the API response — the rest
+            // of the entity now lives server-side.
+            Session.CurrentUser = new Core.UsersList
+            {
+                Id = result.UserId,
+                UserName = result.UserName,
+                FullName = result.FullName,
+                Role = result.Role,
+                Company = result.Company,
+                IsActive = true
+            };
             Session.Machine = Environment.MachineName;
 
             SaveLoginSettings();
-            LogAction(user.Id, user.UserName, "دخول", "شاشة الدخول");
+            LogAction(result.UserId, result.UserName, "دخول", "شاشة الدخول");
 
-            // Mandatory Password Update and Profile Completion
-            if (user.IsFirstLogin || 
-                user.Password == "0000" ||
-                string.IsNullOrWhiteSpace(user.FullName) || 
-                string.IsNullOrWhiteSpace(user.JobTitle) || 
-                string.IsNullOrWhiteSpace(user.Company))
+            // Mandatory Password Update and Profile Completion — AuthService.LoginAsync computes
+            // this identically to the condition that used to live here.
+            if (result.MustChangePassword)
             {
-                using (var updateFrm = new frmUpdatePassword(user.Id))
+                using (var updateFrm = new frmUpdatePassword(result.UserId))
                 {
                     if (updateFrm.ShowDialog() != DialogResult.OK) return;
                 }
-                
-                // Refresh session data after mandatory update
-                Session.CurrentUser = DC.UsersList.GetBy("Id = @Id", new { Id = user.Id }).First();
+
+                // Refresh session data after mandatory update. frmUpdatePassword still writes
+                // directly via Data (out of scope for this slice), so reading it back the same way
+                // is the accurate source for what it just saved (JobTitle/Company/FullName).
+                Session.CurrentUser = DC.UsersList.GetBy("Id = @Id", new { Id = result.UserId }).First();
             }
 
             this.DialogResult = DialogResult.OK;
@@ -152,6 +162,13 @@ namespace Etmam
                 });
             }
             catch { /* Silent log failure to avoid blocking login */ }
+        }
+
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
         #endregion
     }

@@ -2,4 +2,8 @@
   <Project Path="Core/Core.csproj" Id="e7132b43-afcc-427a-90d7-78393c66936e" />
   <Project Path="Data/Data.csproj" Id="c7119d72-a944-4815-9fc3-6e8d5ce14c47" />
   <Project Path="Etmam/Etmam.csproj" />
+  <Project Path="Application/Application.csproj" />
+  <Project Path="Infrastructure/Infrastructure.csproj" />
+  <Project Path="Api/Api.csproj" />
+  <Project Path="Web/Web.csproj" />
 </Solution>

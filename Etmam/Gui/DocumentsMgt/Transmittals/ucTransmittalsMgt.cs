@@ -2,12 +2,16 @@ using System;
 using System.Windows.Forms;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraSplashScreen;
 using Core;
+using Data;
 
 namespace Etmam
 {
     public partial class ucTransmittalsMgt : BaseUserControl
     {
+        private bool _canManage;
+
         protected System.ComponentModel.BindingList<DrawingsSubmittalList> DataSource { get; set; } = new System.ComponentModel.BindingList<DrawingsSubmittalList>();
         protected System.Collections.Generic.List<int> DeletedIds { get; } = new System.Collections.Generic.List<int>();
 
@@ -110,6 +114,12 @@ namespace Etmam
         public ucTransmittalsMgt()
         {
             InitializeComponent();
+            if (DesignMode) return;
+
+            _canManage = PermissionService.HasPermission(PermNames.DocumentSubmittal);
+            bbiNew.Enabled = _canManage;
+            bbiPrint.Enabled = _canManage;
+
             InitializeBaseGrid();
             SetupAconexStyle();
 
@@ -156,11 +166,19 @@ namespace Etmam
 
         public void LoadData()
         {
-            int prjId = Core.Session.SelectedProjectId ?? 1;
-            var data = DC.DrawingsSubmittalList.GetBy("PrjId = @PrjId AND IsDelete = 0", new { PrjId = prjId });
-            DataSource.Clear();
-            foreach (var item in data)
-                DataSource.Add(item);
+            var handle = ShowOverlay();
+            try
+            {
+                int prjId = Core.Session.SelectedProjectId ?? 1;
+                var data = DC.DrawingsSubmittalList.GetBy("PrjId = @PrjId AND IsDelete = 0", new { PrjId = prjId });
+                DataSource.Clear();
+                foreach (var item in data)
+                    DataSource.Add(item);
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public override void OnProjectChanged()
@@ -171,9 +189,22 @@ namespace Etmam
 
         // ── CRUD helpers ──────────────────────────────────────────────────────
 
+        // نقطة الدخول الموحّدة (bbiNew والنقر المزدوج) — الفحص هنا يمنع تجاوز الصلاحية عبر
+        // النقر المزدوج الذي لا يمر بحالة تفعيل الأزرار.
         private void OpenForm(int id = 0)
         {
-            var frm = new frmTransmittalAddEdit(id);
+            if (!_canManage)
+            {
+                DevExpress.XtraEditors.XtraMessageBox.Show("ليس لديك صلاحية إدارة نماذج تقديم المستندات (DSF).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var handle = ShowOverlay();
+            frmTransmittalAddEdit frm;
+            try { frm = new frmTransmittalAddEdit(id); }
+            finally { CloseOverlay(handle); }
+
             var result = frm.ShowDialog(this.FindForm());
             // OK = saved, Abort = deleted from inside the form
             if (result == DialogResult.OK || result == DialogResult.Abort)
@@ -192,5 +223,13 @@ namespace Etmam
 
         private void bbiPrint_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
             => PrintHelper.PrintTransmittals(DataSource);
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
+        }
     }
 }

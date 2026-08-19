@@ -18,6 +18,7 @@ namespace Etmam
 
         public BaseRibbonForm()
         {
+            this.Icon = AppIcon.Default;
             this.Load += BaseRibbonForm_Load;
         }
 

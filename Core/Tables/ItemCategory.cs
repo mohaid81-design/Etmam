@@ -11,6 +11,11 @@ namespace Core
         public int? ParentId { get; set; }
         public int? LvlId { get; set; }
         public int? SortId { get; set; }
+
+        // العناصر الرئيسية الثابتة (المواد/المقاولين/الخدمات/المعدات/الايجارات) — تُزرع مرة واحدة عند أول تشغيل
+        // للبرنامج ولا يجوز حذفها أو تغيير اسمها أو ترتيبها؛ كل واحدة منها نقطة جذر مستقلة لا تدخل
+        // في سلسلة ترقيم الأكواد الخاصة بأبنائها (انظر RecalculateAndSave في frmItemCategoryAddEdit).
+        public bool IsFixed { get; set; }
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
         public DateTime? UpdateDate { get; set; }

@@ -1,0 +1,42 @@
+@page "/"
+
+<PageTitle>الرئيسية - إتمام</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">مرحباً @(_fullName)</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="4">
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">المشاريع</MudText>
+                <MudText Typo="Typo.body2">إدارة كاملة (عرض، إضافة، تعديل، حذف) متاحة الآن عبر الويب.</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Href="/projects" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ListAlt">
+                    فتح قائمة المشاريع
+                </MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" md="8">
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+            باقي الوحدات (الموازنة، المشتريات، العقود، المستندات، ...) لا تزال متاحة فقط عبر تطبيق سطح
+            المكتب حالياً. سيتم ربطها بالويب تباعاً وحدة بوحدة بعد توفير واجهات API الخاصة بها.
+        </MudAlert>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [CascadingParameter]
+    private Task<Microsoft.AspNetCore.Components.Authorization.AuthenticationState>? AuthStateTask { get; set; }
+
+    private string _fullName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask is null)
+            return;
+        var state = await AuthStateTask;
+        _fullName = state.User.FindFirst("full_name")?.Value ?? state.User.Identity?.Name ?? "";
+    }
+}

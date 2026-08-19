@@ -1,0 +1,46 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+<MudThemeProvider Theme="EtmamTheme.Theme" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+        <MudText Typo="Typo.h6" Class="ms-2">إتمام - إدارة المشاريع</MudText>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                @if (context.User.FindFirst("must_change_password")?.Value == "1")
+                {
+                    <MudChip T="string" Color="Color.Warning" Icon="@Icons.Material.Filled.Warning" Class="me-3">
+                        يجب تغيير كلمة المرور من تطبيق سطح المكتب
+                    </MudChip>
+                }
+                <MudText Class="me-3">@(context.User.FindFirst("full_name")?.Value ?? context.User.Identity?.Name)</MudText>
+                <form method="post" action="/account/logout">
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Logout">
+                        خروج
+                    </MudButton>
+                </form>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Variant="DrawerVariant.Responsive" Anchor="Anchor.End">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = false;
+}

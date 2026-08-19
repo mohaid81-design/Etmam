@@ -34,6 +34,21 @@ namespace Core
 
         public string? Note { get; set; }
 
+        // اقتراح حر من مقدّم الطلب لاسم المورد/المصنع المفضّل لهذا البند (نص وليس ربطاً بجدول الموردين،
+        // لأن مقدّم الطلب قد يقترح اسم مصنع غير مسجّل بعد كمورد في النظام) — لا يُلزم مسار الشراء اللاحق باختياره.
+        public string? SupplierManufacturer { get; set; }
+
+        // حقل عرض غير مخزَّن، يُملأ عند الطباعة فقط (انظر frmPurchaseRequestAddEdit.PrintRecord)
+        [NotMapped] public string? UnitAbbreviation { get; set; }
+
+        // ترتيب عرض البند داخل الطلب (يُحدَّث عند إعادة الترتيب بالسحب والإفلات في شبكة البنود)
+        public int? SortId { get; set; }
+
+        // رقم البند التسلسلي المعروض للمستخدم (١، ٢، ٣ ...) — يُعاد ترقيمه تلقائياً من جديد عند أي
+        // إضافة/حذف/إعادة ترتيب لبنود الطلب، بحيث يبدأ من 1 لكل طلب شراء (انظر
+        // frmPurchaseRequestAddEdit.RenumberDetails). يتبع نفس ترتيب SortId لكنه عمود منفصل مخصص للعرض.
+        public int? Num { get; set; }
+
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
         public DateTime? UpdateDate { get; set; }

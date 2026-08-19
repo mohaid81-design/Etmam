@@ -1,0 +1,112 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل مخزن" : "مخزن جديد")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudNumericField @bind-Value="_model.Code" Label="الكود" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="_model.Name" Label="اسم المخزن" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+            <MudSelect T="int?" @bind-Value="_model.PrjId" Label="المشروع" Variant="Variant.Outlined" Class="mb-3">
+                <MudSelectItem T="int?" Value="null">— بدون مشروع —</MudSelectItem>
+                @foreach (var project in _projects)
+                {
+                    <MudSelectItem T="int?" Value="project.Id">@project.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSwitch @bind-Value="_model.IsActive" Label="نشط" Color="Color.Primary" Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? StoreId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly FormModel _model = new() { IsActive = true };
+    private List<ProjectDto> _projects = [];
+    private bool _isEdit;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await Api.GetProjectsAsync();
+
+        _isEdit = StoreId is > 0;
+        if (_isEdit)
+        {
+            var dto = await Api.GetStoreAsync(StoreId!.Value);
+            if (dto is not null)
+            {
+                _model.Code = dto.Code;
+                _model.Name = dto.Name;
+                _model.PrjId = dto.PrjId;
+                _model.IsActive = dto.IsActive ?? true;
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdateStoreAsync(StoreId!.Value, new StoreUpdateRequest
+                {
+                    Code = _model.Code,
+                    Name = _model.Name,
+                    PrjId = _model.PrjId,
+                    IsActive = _model.IsActive,
+                });
+            }
+            else
+            {
+                await Api.CreateStoreAsync(new StoreCreateRequest
+                {
+                    Code = _model.Code,
+                    Name = _model.Name,
+                    PrjId = _model.PrjId,
+                    IsActive = _model.IsActive,
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class FormModel
+    {
+        public int? Code { get; set; }
+        public string? Name { get; set; }
+        public int? PrjId { get; set; }
+        public bool IsActive { get; set; }
+    }
+}

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>etmam-api-6f6f5f0f-2b0a-4b2a-9d1a-3f6a2c0b6b1a</UserSecretsId>
+  </PropertyGroup>
+
+  <!-- Explicit exclude: protects against concurrent agent builds that override
+       BaseIntermediateOutputPath to a sibling subfolder under obj\ (e.g. obj\_agentX\),
+       which narrows the SDK's default item-exclude glob so it no longer covers the
+       whole obj\ tree, letting other agents' generated obj\_agentY\**\*.cs leak into
+       this compile (CS0579 duplicate AssemblyInfo attribute errors). -->
+  <ItemGroup>
+    <Compile Remove="bin\**" />
+    <Compile Remove="obj\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Application\Application.csproj" />
+    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

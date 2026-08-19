@@ -1,0 +1,51 @@
+@** Mirrors Etmam/Gui's 17 desktop modules so the web app's structure represents the whole ERP
+     from day one. Only Projects has a working API-backed screen today; everything else routes to
+     ModulePlaceholder, which says plainly it isn't available via the web yet - see
+     docs/api-migration-checklist.md for which slice is next. **@
+
+<MudNavMenu>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">الرئيسية</MudNavLink>
+
+    <MudNavGroup Title="المشاريع" Icon="@Icons.Material.Filled.Business" Expanded="true">
+        <MudNavLink Href="/projects" Icon="@Icons.Material.Filled.ListAlt">قائمة المشاريع</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="التخطيط والتكاليف" Icon="@Icons.Material.Filled.Insights">
+        <MudNavLink Href="/modules/planning">التخطيط</MudNavLink>
+        <MudNavLink Href="/modules/budget">الموازنة</MudNavLink>
+        <MudNavLink Href="/modules/cost-control">ضبط التكاليف</MudNavLink>
+        <MudNavLink Href="/modules/boq">جداول الكميات</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="المشتريات والمقاولون" Icon="@Icons.Material.Filled.ShoppingCart">
+        <MudNavGroup Title="المشتريات" Icon="@Icons.Material.Filled.RequestQuote">
+            <MudNavLink Href="/procurement/suppliers" Icon="@Icons.Material.Filled.Storefront">الموردون</MudNavLink>
+            <MudNavLink Href="/procurement/purchase-requests" Icon="@Icons.Material.Filled.ListAlt">طلبات الشراء</MudNavLink>
+            <MudNavLink Href="/modules/procurement">أوامر الشراء</MudNavLink>
+        </MudNavGroup>
+        <MudNavLink Href="/modules/subcontractors">مقاولو الباطن</MudNavLink>
+        <MudNavGroup Title="المخازن" Icon="@Icons.Material.Filled.Warehouse">
+            <MudNavLink Href="/inventory/items" Icon="@Icons.Material.Filled.Inventory2">الأصناف</MudNavLink>
+            <MudNavLink Href="/inventory/item-categories">تصنيفات الأصناف</MudNavLink>
+            <MudNavLink Href="/inventory/units">وحدات القياس</MudNavLink>
+            <MudNavLink Href="/inventory/stores">المخازن</MudNavLink>
+            <MudNavLink Href="/modules/inventory">حركات المخزون</MudNavLink>
+        </MudNavGroup>
+    </MudNavGroup>
+
+    <MudNavGroup Title="العقود والمستندات" Icon="@Icons.Material.Filled.Description">
+        <MudNavLink Href="/modules/contracts">العقود</MudNavLink>
+        <MudNavLink Href="/modules/documents">المستندات</MudNavLink>
+        <MudNavLink Href="/modules/edms">إدارة الوثائق (EDMS)</MudNavLink>
+        <MudNavLink Href="/modules/correspondence">المراسلات</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="الجودة والسلامة" Icon="@Icons.Material.Filled.HealthAndSafety">
+        <MudNavLink Href="/modules/quality">الجودة</MudNavLink>
+        <MudNavLink Href="/modules/hse">الصحة والسلامة (HSE)</MudNavLink>
+    </MudNavGroup>
+
+    <MudNavGroup Title="سير العمل" Icon="@Icons.Material.Filled.AccountTree">
+        <MudNavLink Href="/modules/workflow">سير العمل والاعتمادات</MudNavLink>
+    </MudNavGroup>
+</MudNavMenu>

@@ -11,6 +11,7 @@ using DevExpress.XtraBars;
 using DevExpress.XtraBars.Navigation;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
+using Microsoft.Data.SqlClient;
 
 namespace Etmam
 {
@@ -433,23 +434,34 @@ namespace Etmam
             {
                 handle = SplashScreenManager.ShowOverlayForm(this);
 
-                // 3. Persist Header
-                if (_dailyReportId > 0)
-                {
-                    if (isAsync) await DC.DailyReport.EditAsync(_dailyReportId, _report);
-                    else DC.DailyReport.Edit(_dailyReportId, _report);
-                }
-                else
-                {
-                    if (isAsync) _dailyReportId = await DC.DailyReport.AddAsync(_report);
-                    else _dailyReportId = DC.DailyReport.Add(_report);
-                }
+                // 3+4. Persist header and every sub-module's detail grid in one connection/transaction
+                // instead of each opening its own — a report's ~10 detail grids used to mean dozens of
+                // separate round trips to Azure SQL per save. The sub-control saves were already fully
+                // synchronous regardless of isAsync (DevExpress grid access must run on the UI thread),
+                // so wrapping them in a single sync transaction here doesn't change blocking behavior,
+                // only round-trip count.
+                var reportToSave = _report;
+                var reportId = _dailyReportId;
+                var controlsToSave = _initializedControls.OfType<BaseUserControl>().ToList();
 
-                // 4. Save Sub-modules
-                foreach (var ctrl in _initializedControls.OfType<BaseUserControl>())
+                Data.DataContext.RunInTransaction(tx =>
                 {
-                    ctrl.SaveData(_dailyReportId);
-                }
+                    if (reportId > 0)
+                    {
+                        DC.DailyReport.Edit(reportId, reportToSave, tx);
+                    }
+                    else
+                    {
+                        reportId = DC.DailyReport.Add(reportToSave, tx);
+                    }
+
+                    foreach (var ctrl in controlsToSave)
+                    {
+                        ctrl.SaveData(reportId, tx);
+                    }
+                });
+
+                _dailyReportId = reportId;
 
                 // Keep local header context fresh for navigation/search without reloading tabs.
                 _report = DC.DailyReport.Find(_dailyReportId) ?? _report;
@@ -673,27 +685,22 @@ namespace Etmam
         private string GenerateNextReportNumber(int prjId, DateTime reportDate)
         {
             string datePart = reportDate.ToString("yyyyMMdd");
-            
-            // Find ALL reports for this project to determine the next overall sequence number
-            var projectReports = DC.DailyReport.GetBy("PrjId = @prjId", new { prjId = prjId });
 
+            // Was: pull every column of every DailyReport row for this project just to parse the
+            // trailing sequence number out of ReportNumber client-side — for a project with years of
+            // history that's the single heaviest query on the "new report" path. The MAX is computed
+            // server-side instead: one round trip, one scalar value, no rows transferred.
             int nextNum = 1;
-            if (projectReports != null && projectReports.Any())
+            using (var con = new SqlConnection(DBSetting.GetConString()))
+            using (var cmd = new SqlCommand(
+                "SELECT MAX(TRY_CAST(RIGHT(ReportNumber, CHARINDEX('-', REVERSE(ReportNumber)) - 1) AS INT)) " +
+                "FROM [DailyReport] WHERE PrjId = @prjId AND ReportNumber LIKE 'DR-%-%'", con))
             {
-                // Get the maximum sequence number from existing reports for this project
-                var maxNum = projectReports
-                    .Where(r => !string.IsNullOrEmpty(r.ReportNumber) && r.ReportNumber.StartsWith("DR-") && r.ReportNumber.Contains("-"))
-                    .Select(r => 
-                    {
-                        var parts = r.ReportNumber!.Split('-');
-                        if (parts.Length >= 3 && int.TryParse(parts[parts.Length - 1], out int num))
-                            return num;
-                        return 0;
-                    })
-                    .DefaultIfEmpty(0)
-                    .Max();
-
-                nextNum = maxNum + 1;
+                cmd.Parameters.AddWithValue("@prjId", prjId);
+                con.Open();
+                var result = cmd.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                    nextNum = Convert.ToInt32(result) + 1;
             }
             return $"DR-{datePart}-{nextNum:D3}";
         }

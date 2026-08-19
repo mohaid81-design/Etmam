@@ -1,0 +1,127 @@
+@page "/projects"
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>قائمة المشاريع - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">المشاريع</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        مشروع جديد
+    </MudButton>
+</MudStack>
+
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Placeholder="بحث بالاسم..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Class="mb-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTable Items="@FilteredProjects" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>رقم المشروع</MudTh>
+            <MudTh>الاسم</MudTh>
+            <MudTh>العميل</MudTh>
+            <MudTh>الاستشاري</MudTh>
+            <MudTh>تاريخ العقد</MudTh>
+            <MudTh>قيمة العقد</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="رقم المشروع">@context.Num</MudTd>
+            <MudTd DataLabel="الاسم">@context.Name</MudTd>
+            <MudTd DataLabel="العميل">@context.ClientName</MudTd>
+            <MudTd DataLabel="الاستشاري">@context.ConsultantName</MudTd>
+            <MudTd DataLabel="تاريخ العقد">@(context.ContractDate?.ToString("yyyy-MM-dd"))</MudTd>
+            <MudTd DataLabel="قيمة العقد">@(context.ContractAmount?.ToString("N2"))</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteProject(context))" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا توجد مشاريع.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<ProjectDto> _projects = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private string _search = "";
+
+    private IEnumerable<ProjectDto> FilteredProjects =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _projects
+            : _projects.Where(p => (p.Name ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)
+                                 || (p.Num ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _projects = await Api.GetProjectsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل المشاريع من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchChanged(string value) => _search = value;
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<ProjectEditDialog> { { x => x.ProjectId, null } };
+        var dialog = await DialogService.ShowAsync<ProjectEditDialog>("مشروع جديد", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<ProjectEditDialog> { { x => x.ProjectId, id } };
+        var dialog = await DialogService.ShowAsync<ProjectEditDialog>("تعديل مشروع", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteProject(ProjectDto project)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف المشروع \"{project.Name}\"؟",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Api.DeleteProjectAsync(project.Id);
+            Snackbar.Add("تم حذف المشروع.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+}

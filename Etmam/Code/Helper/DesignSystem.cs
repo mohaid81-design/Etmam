@@ -22,13 +22,24 @@ namespace Etmam
             public static readonly Color Border      = Color.FromArgb(220, 225, 232);
             public static readonly Color TextPrimary = Color.FromArgb(25, 25, 35);
             public static readonly Color Accent      = Color.FromArgb(0, 120, 215);
-            
+
             // Category Accents (from ucWorkDoneToday)
             public static readonly Color CategoryStructural = Color.FromArgb(204, 102, 0);
             public static readonly Color CategoryArchitect   = Color.FromArgb(23, 96, 158);
             public static readonly Color CategoryMechanical  = Color.FromArgb(30, 140, 80);
             public static readonly Color CategoryElectrical  = Color.FromArgb(120, 50, 160);
             public static readonly Color CategoryOther       = Color.FromArgb(70, 85, 100);
+
+            // Settings screen palette additions
+            public static readonly Color BgSecondary  = Color.FromArgb(248, 249, 251);
+            public static readonly Color TextSecondary = Color.FromArgb(90, 100, 115);
+            public static readonly Color TextTertiary  = Color.FromArgb(140, 148, 160);
+            public static readonly Color BorderLight   = Color.FromArgb(230, 233, 238);
+            public static readonly Color WarningLight  = Color.FromArgb(255, 244, 224);
+            public static readonly Color WarningDark   = Color.FromArgb(150, 100, 0);
+            public static readonly Color SuccessLight  = Color.FromArgb(225, 245, 232);
+            public static readonly Color InfoLight     = Color.FromArgb(224, 240, 255);
+            public static readonly Color Info          = Color.FromArgb(23, 96, 158);
         }
 
         // ─── Typography ──────────────────────────────────────────────────────
@@ -44,58 +55,58 @@ namespace Etmam
         // ─── Grid Utilities ──────────────────────────────────────────────────
         public static void ApplyProfessionalStyle(GridView gv)
         {
-            // Appearance
-            gv.Appearance.HeaderPanel.Font = Fonts.Bold();
-            gv.Appearance.HeaderPanel.ForeColor = Colors.Primary;
-            gv.Appearance.HeaderPanel.Options.UseFont = true;
-            gv.Appearance.HeaderPanel.Options.UseForeColor = true;
-            gv.Appearance.HeaderPanel.TextOptions.HAlignment = HorzAlignment.Center;
+            //// Appearance
+            //gv.Appearance.HeaderPanel.Font = Fonts.Bold();
+            //gv.Appearance.HeaderPanel.ForeColor = Colors.Primary;
+            //gv.Appearance.HeaderPanel.Options.UseFont = true;
+            //gv.Appearance.HeaderPanel.Options.UseForeColor = true;
+            //gv.Appearance.HeaderPanel.TextOptions.HAlignment = HorzAlignment.Center;
 
-            gv.Appearance.Row.Font = Fonts.Regular(8.5F);
-            gv.Appearance.Row.Options.UseFont = true;
-            gv.Appearance.Row.ForeColor = Colors.TextPrimary;
+            //gv.Appearance.Row.Font = Fonts.Regular(8.5F);
+            //gv.Appearance.Row.Options.UseFont = true;
+            //gv.Appearance.Row.ForeColor = Colors.TextPrimary;
 
-            gv.Appearance.EvenRow.BackColor = Color.FromArgb(242, 246, 252);
-            gv.Appearance.EvenRow.Options.UseBackColor = true;
+            //gv.Appearance.EvenRow.BackColor = Color.FromArgb(242, 246, 252);
+            //gv.Appearance.EvenRow.Options.UseBackColor = true;
 
-            gv.Appearance.FocusedRow.BackColor = Colors.Primary;
-            gv.Appearance.FocusedRow.ForeColor = Color.White;
-            gv.Appearance.FocusedRow.Options.UseBackColor = true;
-            gv.Appearance.FocusedRow.Options.UseForeColor = true;
+            //gv.Appearance.FocusedRow.BackColor = Colors.Primary;
+            //gv.Appearance.FocusedRow.ForeColor = Color.White;
+            //gv.Appearance.FocusedRow.Options.UseBackColor = true;
+            //gv.Appearance.FocusedRow.Options.UseForeColor = true;
 
-            gv.Appearance.FocusedCell.BackColor = Color.FromArgb(50, 100, 170);
-            gv.Appearance.FocusedCell.ForeColor = Color.White;
-            gv.Appearance.FocusedCell.Options.UseBackColor = true;
-            gv.Appearance.FocusedCell.Options.UseForeColor = true;
+            //gv.Appearance.FocusedCell.BackColor = Color.FromArgb(50, 100, 170);
+            //gv.Appearance.FocusedCell.ForeColor = Color.White;
+            //gv.Appearance.FocusedCell.Options.UseBackColor = true;
+            //gv.Appearance.FocusedCell.Options.UseForeColor = true;
 
-            // Options
-            gv.OptionsView.EnableAppearanceEvenRow = true;
-            gv.OptionsView.ShowGroupPanel = false;
-            gv.OptionsView.ShowIndicator = true;
-            gv.OptionsView.ColumnAutoWidth = false;
-            gv.OptionsView.RowAutoHeight = false;
-            gv.RowHeight = 30;
+            //// Options
+            //gv.OptionsView.EnableAppearanceEvenRow = true;
+            //gv.OptionsView.ShowGroupPanel = false;
+            //gv.OptionsView.ShowIndicator = true;
+            //gv.OptionsView.ColumnAutoWidth = false;
+            //gv.OptionsView.RowAutoHeight = false;
+            //gv.RowHeight = 30;
 
-            gv.OptionsNavigation.EnterMoveNextColumn = true;
-            gv.OptionsBehavior.EditorShowMode = EditorShowMode.MouseDownFocused;
+            //gv.OptionsNavigation.EnterMoveNextColumn = true;
+            //gv.OptionsBehavior.EditorShowMode = EditorShowMode.MouseDownFocused;
             
-            gv.OptionsSelection.MultiSelect = true;
-            gv.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CellSelect;
+            //gv.OptionsSelection.MultiSelect = true;
+            //gv.OptionsSelection.MultiSelectMode = GridMultiSelectMode.CellSelect;
             
-            gv.OptionsClipboard.CopyColumnHeaders = DefaultBoolean.False;
+            //gv.OptionsClipboard.CopyColumnHeaders = DefaultBoolean.False;
         }
 
         public static void ApplyGridStyle(DevExpress.XtraGrid.GridControl gc, GridView gv)
         {
-            ApplyProfessionalStyle(gv);
-            gc.EmbeddedNavigator.Visible = false;
+            //ApplyProfessionalStyle(gv);
+            //gc.EmbeddedNavigator.Visible = false;
         }
 
         public static void SetColumnCentered(DevExpress.XtraGrid.Columns.GridColumn col)
         {
-            if (col == null) return;
-            col.AppearanceCell.TextOptions.HAlignment = HorzAlignment.Center;
-            col.AppearanceHeader.TextOptions.HAlignment = HorzAlignment.Center;
+            //if (col == null) return;
+            //col.AppearanceCell.TextOptions.HAlignment = HorzAlignment.Center;
+            //col.AppearanceHeader.TextOptions.HAlignment = HorzAlignment.Center;
         }
 
         public static void HideAuditColumns(GridView gv)
@@ -166,38 +177,38 @@ namespace Etmam
         /// </summary>
         public static void ApplyTreeListStyle(DevExpress.XtraTreeList.TreeList tl)
         {
-            tl.Appearance.HeaderPanel.Font = Fonts.Header();
-            tl.Appearance.HeaderPanel.ForeColor = Colors.Primary;
-            tl.Appearance.HeaderPanel.Options.UseFont = true;
-            tl.Appearance.HeaderPanel.Options.UseForeColor = true;
-            tl.Appearance.HeaderPanel.TextOptions.HAlignment = HorzAlignment.Center;
+            //tl.Appearance.HeaderPanel.Font = Fonts.Header();
+            //tl.Appearance.HeaderPanel.ForeColor = Colors.Primary;
+            //tl.Appearance.HeaderPanel.Options.UseFont = true;
+            //tl.Appearance.HeaderPanel.Options.UseForeColor = true;
+            //tl.Appearance.HeaderPanel.TextOptions.HAlignment = HorzAlignment.Center;
 
-            tl.Appearance.Row.Font = Fonts.Regular(8F);
-            tl.Appearance.Row.Options.UseFont = true;
-            tl.Appearance.Row.ForeColor = Colors.TextPrimary;
+            //tl.Appearance.Row.Font = Fonts.Regular(8F);
+            //tl.Appearance.Row.Options.UseFont = true;
+            //tl.Appearance.Row.ForeColor = Colors.TextPrimary;
 
-            tl.OptionsView.ShowIndicator = false;
-            tl.OptionsView.AutoWidth = false;
-            tl.OptionsBehavior.Editable = false;
+            //tl.OptionsView.ShowIndicator = false;
+            //tl.OptionsView.AutoWidth = false;
+            //tl.OptionsBehavior.Editable = false;
             
-            // Zebra striping
-            tl.OptionsView.EnableAppearanceEvenRow = true;
-            tl.Appearance.EvenRow.BackColor = Color.FromArgb(245, 247, 250);
-            tl.Appearance.EvenRow.Options.UseBackColor = true;
+            //// Zebra striping
+            //tl.OptionsView.EnableAppearanceEvenRow = true;
+            //tl.Appearance.EvenRow.BackColor = Color.FromArgb(245, 247, 250);
+            //tl.Appearance.EvenRow.Options.UseBackColor = true;
             
-            tl.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Solid;
-            tl.OptionsView.FocusRectStyle = DevExpress.XtraTreeList.DrawFocusRectStyle.RowFocus;
+            //tl.TreeLineStyle = DevExpress.XtraTreeList.LineStyle.Solid;
+            //tl.OptionsView.FocusRectStyle = DevExpress.XtraTreeList.DrawFocusRectStyle.RowFocus;
             
-            // Focused Styling
-            tl.Appearance.FocusedCell.BackColor = Colors.Primary;
-            tl.Appearance.FocusedCell.ForeColor = Color.White;
-            tl.Appearance.FocusedCell.Options.UseBackColor = true;
-            tl.Appearance.FocusedCell.Options.UseForeColor = true;
+            //// Focused Styling
+            //tl.Appearance.FocusedCell.BackColor = Colors.Primary;
+            //tl.Appearance.FocusedCell.ForeColor = Color.White;
+            //tl.Appearance.FocusedCell.Options.UseBackColor = true;
+            //tl.Appearance.FocusedCell.Options.UseForeColor = true;
             
-            tl.Appearance.FocusedRow.BackColor = Colors.Primary;
-            tl.Appearance.FocusedRow.ForeColor = Color.White;
-            tl.Appearance.FocusedRow.Options.UseBackColor = true;
-            tl.Appearance.FocusedRow.Options.UseForeColor = true;
+            //tl.Appearance.FocusedRow.BackColor = Colors.Primary;
+            //tl.Appearance.FocusedRow.ForeColor = Color.White;
+            //tl.Appearance.FocusedRow.Options.UseBackColor = true;
+            //tl.Appearance.FocusedRow.Options.UseForeColor = true;
         }
 
         public static void HideTreeListAuditColumns(DevExpress.XtraTreeList.TreeList tl)
@@ -229,6 +240,51 @@ namespace Etmam
             }
         }
 
+        public static void StylePrimaryButton(DevExpress.XtraEditors.SimpleButton button)
+        {
+            ApplyButtonStyle(button, isPrimary: true);
+            button.Appearance.BackColor = Colors.Primary;
+            button.Appearance.Options.UseBackColor = true;
+        }
+
+        public static void StyleOutlineButton(DevExpress.XtraEditors.SimpleButton button)
+        {
+            ApplyButtonStyle(button, isPrimary: false);
+            button.Appearance.ForeColor = Colors.Primary;
+            button.Appearance.BorderColor = Colors.Border;
+            button.Appearance.Options.UseForeColor = true;
+            button.Appearance.Options.UseBorderColor = true;
+        }
+
+        public static void StyleSuccessButton(DevExpress.XtraEditors.SimpleButton button)
+        {
+            ApplyButtonStyle(button, isPrimary: true);
+            button.Appearance.BackColor = Color.FromArgb(46, 125, 50);
+            button.Appearance.Options.UseBackColor = true;
+        }
+
+        // ─── Simple border-paint helpers for the settings screen's card layout ──
+        public static void DrawTopBorder(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Control c) return;
+            using var pen = new Pen(Colors.Border);
+            e.Graphics.DrawLine(pen, 0, 0, c.Width, 0);
+        }
+
+        public static void DrawBottomBorder(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Control c) return;
+            using var pen = new Pen(Colors.Border);
+            e.Graphics.DrawLine(pen, 0, c.Height - 1, c.Width, c.Height - 1);
+        }
+
+        public static void DrawCardBorder(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Control c) return;
+            using var pen = new Pen(Colors.Border);
+            e.Graphics.DrawRectangle(pen, 0, 0, c.Width - 1, c.Height - 1);
+        }
+
         // ─── TileBar Icon Recoloring ─────────────────────────────────────────
         // TileBar's own coloring knobs (AllowGlyphSkinning, SvgImageColorizationMode) only ever
         // produce two results in practice: the icon's original artwork, or a fixed color picked
@@ -245,6 +301,21 @@ namespace Etmam
         /// regardless of whether the icon was assigned directly (ImageOptions.SvgImage)
         /// or referenced by index into a shared SvgImageCollection.
         /// </summary>
+        /// <summary>
+        /// Returns a copy of an SVG image with every shape's fill/stroke forced to a fixed color.
+        /// Use this for glyph icons (e.g. grid column button editors) whose color would otherwise
+        /// shift with the DevExpress skin's focused/selected-cell state, sometimes to the point of
+        /// becoming unreadable against the cell's background — see RecolorTileBarIcons above for why
+        /// the built-in AllowGlyphSkinning/SvgImageColorizationMode knobs can't do this instead.
+        /// </summary>
+        public static DevExpress.Utils.Svg.SvgImage RecolorSvgImage(DevExpress.Utils.Svg.SvgImage svg, Color color)
+        {
+            string hex = ColorTranslator.ToHtml(color);
+            var recolored = svg.Clone();
+            RecolorSvgElements(recolored.Root.Elements, hex);
+            return recolored;
+        }
+
         public static void RecolorTileBarIcons(DevExpress.XtraBars.Navigation.TileBar tileBar, Color color)
         {
             string hex = ColorTranslator.ToHtml(color);
@@ -296,36 +367,36 @@ namespace Etmam
         // ─── Form Branding ──────────────────────────────────────────────────
         public static void ApplyFormBranding(Form form)
         {
-            form.Font = Fonts.Regular(9);
-            ApplyCairoFontRecursively(form);
+            //form.Font = Fonts.Regular(9);
+            //ApplyCairoFontRecursively(form);
         }
 
         public static void ApplyCairoFont(Control control)
         {
-            ApplyCairoFontRecursively(control);
+            //ApplyCairoFontRecursively(control);
         }
 
         private static void ApplyCairoFontRecursively(Control parent)
         {
-            if (parent == null) return;
+            //if (parent == null) return;
             
-            // Set font if not already Cairo (optimization)
-            if (parent.Font.Name != "Cairo")
-            {
-                parent.Font = Fonts.Regular(parent.Font.Size);
-            }
+            //// Set font if not already Cairo (optimization)
+            //if (parent.Font.Name != "Cairo")
+            //{
+            //    parent.Font = Fonts.Regular(parent.Font.Size);
+            //}
 
-            // Special handling for DevExpress editors
-            if (parent is BaseEdit edit)
-            {
-                edit.Properties.Appearance.Font = Fonts.Regular(edit.Properties.Appearance.Font.Size);
-                edit.Properties.Appearance.Options.UseFont = true;
-            }
+            //// Special handling for DevExpress editors
+            //if (parent is BaseEdit edit)
+            //{
+            //    edit.Properties.Appearance.Font = Fonts.Regular(edit.Properties.Appearance.Font.Size);
+            //    edit.Properties.Appearance.Options.UseFont = true;
+            //}
 
-            foreach (Control ctrl in parent.Controls)
-            {
-                ApplyCairoFontRecursively(ctrl);
-            }
+            //foreach (Control ctrl in parent.Controls)
+            //{
+            //    ApplyCairoFontRecursively(ctrl);
+            //}
         }
     }
 }

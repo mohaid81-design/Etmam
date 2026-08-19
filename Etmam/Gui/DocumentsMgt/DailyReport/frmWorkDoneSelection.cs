@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Core;
 using Data;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
@@ -171,13 +172,27 @@ namespace Etmam
             using (var dlg = new frmActivityAddEdit())
             {
                 if (dlg.ShowDialog() == DialogResult.OK)
-                    LoadData();
+                {
+                    var handle = ShowOverlay();
+                    try { LoadData(); }
+                    finally { CloseOverlay(handle); }
+                }
             }
         }
 
         private void BbiRefresh_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            LoadData();
+            var handle = ShowOverlay();
+            try { LoadData(); }
+            finally { CloseOverlay(handle); }
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

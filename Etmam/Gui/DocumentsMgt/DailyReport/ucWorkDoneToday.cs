@@ -7,7 +7,9 @@ using DevExpress.XtraBars;
 using DevExpress.XtraGrid.Views.Grid;
 using Core;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 using Data;
+using Microsoft.Data.SqlClient;
 
 namespace Etmam
 {
@@ -91,31 +93,39 @@ namespace Etmam
 
         public void LoadData()
         {
-            ucGridStr.Clear();
-            ucGridArc.Clear();
-            ucGridMec.Clear();
-            ucGridElc.Clear();
-            ucGridOther.Clear();
-            _activityCache.Clear();
-
-            if (CurrentDailyReportId == 0) return;
-
-            // Load Activities for cache
-            var activities = DC.ActivityList.GetBy("IsDelete = 0", null);
-            foreach (var act in activities) _activityCache[act.Id] = act;
-
-            // Load WorkDone items
-            var workDoneItems = DC.DailyReportWorkDone
-                .GetBy("DailyReportId = @drId AND IsDelete = 0", new { drId = CurrentDailyReportId });
-
-            foreach (var item in workDoneItems)
+            var handle = ShowOverlay();
+            try
             {
-                string cat = string.Empty;
-                if (item.ActivityId.HasValue && _activityCache.TryGetValue(item.ActivityId.Value, out var act))
-                    cat = act.Category ?? string.Empty;
+                ucGridStr.Clear();
+                ucGridArc.Clear();
+                ucGridMec.Clear();
+                ucGridElc.Clear();
+                ucGridOther.Clear();
+                _activityCache.Clear();
 
-                var grid = GetGridByRowCategory(cat);
-                grid.GetItems().Add(item);
+                if (CurrentDailyReportId == 0) return;
+
+                // Load Activities for cache
+                var activities = DC.ActivityList.GetBy("IsDelete = 0", null);
+                foreach (var act in activities) _activityCache[act.Id] = act;
+
+                // Load WorkDone items
+                var workDoneItems = DC.DailyReportWorkDone
+                    .GetBy("DailyReportId = @drId AND IsDelete = 0", new { drId = CurrentDailyReportId });
+
+                foreach (var item in workDoneItems)
+                {
+                    string cat = string.Empty;
+                    if (item.ActivityId.HasValue && _activityCache.TryGetValue(item.ActivityId.Value, out var act))
+                        cat = act.Category ?? string.Empty;
+
+                    var grid = GetGridByRowCategory(cat);
+                    grid.GetItems().Add(item);
+                }
+            }
+            finally
+            {
+                CloseOverlay(handle);
             }
         }
 
@@ -131,12 +141,12 @@ namespace Etmam
             };
         }
 
-        public override void SaveData(int dailyReportId)
+        public override void SaveData(int dailyReportId, SqlTransaction? transaction = null)
         {
             var allGrids = new[] { ucGridStr, ucGridArc, ucGridMec, ucGridElc, ucGridOther };
             foreach (var grid in allGrids)
             {
-                grid.SaveData(dailyReportId);
+                grid.SaveData(dailyReportId, transaction);
             }
         }
 
@@ -172,17 +182,25 @@ namespace Etmam
 
         private void HandleToolbarCopy()
         {
-            var lastReport = DC.DailyReport.GetBy(
-                "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
-                new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
-
-            if (lastReport == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+                var lastReport = DC.DailyReport.GetBy(
+                    "PrjId = @pId AND ReportDate < @rDate AND IsDelete = 0 ORDER BY ReportDate DESC",
+                    new { pId = CurrentProjectId, rDate = CurrentReportDate }).FirstOrDefault();
 
-            CopyFromPrevious(lastReport.Id);
+                if (lastReport == null)
+                {
+                    XtraMessageBox.Show("لا يوجد تقرير سابق لنسخ البيانات منه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                CopyFromPrevious(lastReport.Id);
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public override int CopyFromPrevious(int lastReportId)
@@ -230,6 +248,14 @@ namespace Etmam
                 pg.Appearance.HeaderActive.ForeColor = s.fore;
                 pg.Appearance.HeaderActive.Font = font;
             }
+        }
+
+        // ─── مؤشر الانتظار ──────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

@@ -1,0 +1,301 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل طلب شراء" : "طلب شراء جديد")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Class="mb-3">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int?" @bind-Value="_model.PrjId" Label="المشروع" Variant="Variant.Outlined" Required="true">
+                        @foreach (var project in _projects)
+                        {
+                            <MudSelectItem T="int?" Value="project.Id">@project.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int?" @bind-Value="_model.StoreId" Label="المخزن" Variant="Variant.Outlined" Required="true">
+                        @foreach (var store in _stores)
+                        {
+                            <MudSelectItem T="int?" Value="store.Id">@store.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int?" @bind-Value="_model.DisciplineId" Label="التخصص" Variant="Variant.Outlined" Required="true">
+                        @foreach (var discipline in _disciplines)
+                        {
+                            <MudSelectItem T="int?" Value="discipline.Id">@discipline.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="_model.Type" Label="نوع الطلب" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("المواد")">مواد</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("خدمة")">خدمة</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("مقاولات")">مقاولات</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_model.RequestDate" Label="تاريخ الطلب" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_model.RequiredDate" Label="التاريخ المطلوب" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="_model.Priority" Label="الأولوية" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("عادي")">عادي</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("عاجل")">عاجل</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.Purpose" Label="الغرض من الطلب" Variant="Variant.Outlined" Required="true" Lines="2" />
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">بنود الطلب</MudText>
+
+            @if (_lines.Count > 0)
+            {
+                <MudTable Items="@_lines" Dense="true" Bordered="true" Class="mb-3">
+                    <HeaderContent>
+                        <MudTh>الصنف</MudTh>
+                        <MudTh>الوصف</MudTh>
+                        <MudTh>الكمية</MudTh>
+                        <MudTh>الوحدة</MudTh>
+                        <MudTh>مركز التكلفة</MudTh>
+                        <MudTh>الموازنة</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@ItemName(context.ItemId)</MudTd>
+                        <MudTd>@context.Description</MudTd>
+                        <MudTd>@context.Qty</MudTd>
+                        <MudTd>@UnitName(context.UnitId)</MudTd>
+                        <MudTd>@CostCenterName(context.CCId)</MudTd>
+                        <MudTd>@BudgetName(context.BdgId)</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => _lines.Remove(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">لا توجد بنود بعد - أضف بندًا واحدًا على الأقل.</MudAlert>
+            }
+
+            <MudPaper Outlined="true" Class="pa-3">
+                <MudGrid>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="int?" @bind-Value="_newLine.ItemId" Label="الصنف" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var item in _items)
+                            {
+                                <MudSelectItem T="int?" Value="item.Id">@item.Code @item.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_newLine.Description" Label="الوصف" Variant="Variant.Outlined" Dense="true" />
+                    </MudItem>
+                    <MudItem xs="6" sm="2">
+                        <MudNumericField @bind-Value="_newLine.Qty" Label="الكمية" Variant="Variant.Outlined" Dense="true" />
+                    </MudItem>
+                    <MudItem xs="6" sm="2">
+                        <MudSelect T="int?" @bind-Value="_newLine.UnitId" Label="الوحدة" Variant="Variant.Outlined" Dense="true">
+                            @foreach (var unit in _units)
+                            {
+                                <MudSelectItem T="int?" Value="unit.Id">@unit.Description</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="int?" @bind-Value="_newLine.CCId" Label="مركز التكلفة" Variant="Variant.Outlined" Dense="true">
+                            <MudSelectItem T="int?" Value="null">— بدون —</MudSelectItem>
+                            @foreach (var cc in _costCenters)
+                            {
+                                <MudSelectItem T="int?" Value="cc.Id">@cc.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="int?" @bind-Value="_newLine.BdgId" Label="الموازنة" Variant="Variant.Outlined" Dense="true">
+                            <MudSelectItem T="int?" Value="null">— بدون —</MudSelectItem>
+                            @foreach (var budget in _budgets)
+                            {
+                                <MudSelectItem T="int?" Value="budget.Id">@budget.Description</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="4" Class="d-flex align-center">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="AddLine">
+                            إضافة البند
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? PurchaseRequestId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly HeaderModel _model = new() { Priority = "عادي", Type = "المواد", RequestDate = DateTime.Today };
+    private readonly List<PurchaseRequestLineSaveRequest> _lines = [];
+    private PurchaseRequestLineSaveRequest _newLine = new();
+    private bool _isEdit;
+    private bool _saving;
+
+    private List<ProjectDto> _projects = [];
+    private List<StoreDto> _stores = [];
+    private List<DisciplineLookupDto> _disciplines = [];
+    private List<ItemDto> _items = [];
+    private List<UnitDto> _units = [];
+    private List<CostCenterLookupDto> _costCenters = [];
+    private List<BudgetLookupDto> _budgets = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _projects = await Api.GetProjectsAsync();
+        _stores = await Api.GetStoresAsync();
+        _disciplines = await Api.GetDisciplinesAsync();
+        _items = await Api.GetItemsAsync();
+        _units = await Api.GetUnitsAsync();
+        _costCenters = await Api.GetCostCentersAsync();
+        _budgets = await Api.GetBudgetsAsync();
+
+        _isEdit = PurchaseRequestId is > 0;
+        if (_isEdit)
+        {
+            var dto = await Api.GetPurchaseRequestAsync(PurchaseRequestId!.Value);
+            if (dto is not null)
+            {
+                _model.PrjId = dto.PrjId;
+                _model.StoreId = dto.StoreId;
+                _model.DisciplineId = dto.DisciplineId;
+                _model.RequestDate = dto.RequestDate;
+                _model.RequiredDate = dto.RequiredDate;
+                _model.Purpose = dto.Purpose;
+                _model.Priority = dto.Priority ?? "عادي";
+                _model.Type = dto.Type ?? "المواد";
+
+                _lines.AddRange(dto.Lines.Select(l => new PurchaseRequestLineSaveRequest
+                {
+                    Id = l.Id,
+                    ItemId = l.ItemId,
+                    Description = l.Description,
+                    Qty = l.Qty,
+                    UnitId = l.UnitId,
+                    CCId = l.CCId,
+                    BdgId = l.BdgId,
+                    Note = l.Note,
+                    SupplierManufacturer = l.SupplierManufacturer
+                }));
+            }
+        }
+    }
+
+    private string? ItemName(int? id) => id is int i ? _items.FirstOrDefault(x => x.Id == i)?.Name : null;
+    private string? UnitName(int? id) => id is int i ? _units.FirstOrDefault(x => x.Id == i)?.Description : null;
+    private string? CostCenterName(int? id) => id is int i ? _costCenters.FirstOrDefault(x => x.Id == i)?.Name : null;
+    private string? BudgetName(int? id) => id is int i ? _budgets.FirstOrDefault(x => x.Id == i)?.Description : null;
+
+    private void AddLine()
+    {
+        if (_newLine.ItemId is null || _newLine.Qty is null or <= 0)
+        {
+            Snackbar.Add("يرجى اختيار الصنف وإدخال كمية أكبر من صفر.", Severity.Warning);
+            return;
+        }
+
+        _lines.Add(_newLine);
+        _newLine = new PurchaseRequestLineSaveRequest();
+    }
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        if (_lines.Count == 0)
+        {
+            Snackbar.Add("يرجى إضافة بند واحد على الأقل.", Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdatePurchaseRequestAsync(PurchaseRequestId!.Value, new PurchaseRequestUpdateRequest
+                {
+                    PrjId = _model.PrjId,
+                    StoreId = _model.StoreId,
+                    DisciplineId = _model.DisciplineId,
+                    RequestDate = _model.RequestDate,
+                    RequiredDate = _model.RequiredDate,
+                    Purpose = _model.Purpose,
+                    Priority = _model.Priority,
+                    Type = _model.Type,
+                    Lines = _lines,
+                });
+            }
+            else
+            {
+                await Api.CreatePurchaseRequestAsync(new PurchaseRequestCreateRequest
+                {
+                    PrjId = _model.PrjId,
+                    StoreId = _model.StoreId,
+                    DisciplineId = _model.DisciplineId,
+                    RequestDate = _model.RequestDate,
+                    RequiredDate = _model.RequiredDate,
+                    Purpose = _model.Purpose,
+                    Priority = _model.Priority,
+                    Type = _model.Type,
+                    Lines = _lines,
+                });
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class HeaderModel
+    {
+        public int? PrjId { get; set; }
+        public int? StoreId { get; set; }
+        public int? DisciplineId { get; set; }
+        public DateTime? RequestDate { get; set; }
+        public DateTime? RequiredDate { get; set; }
+        public string? Purpose { get; set; }
+        public string? Priority { get; set; }
+        public string? Type { get; set; }
+    }
+}

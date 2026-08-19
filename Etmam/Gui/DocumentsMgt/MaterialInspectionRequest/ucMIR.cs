@@ -2,12 +2,16 @@ using System;
 using System.Windows.Forms;
 using DevExpress.XtraGrid;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraSplashScreen;
 using Core;
+using Data;
 
 namespace Etmam
 {
     public partial class ucMIR : BaseUserControl
     {
+        private bool _canManage;
+
         protected System.ComponentModel.BindingList<DrawingsSubmittalList> DataSource { get; set; } = new System.ComponentModel.BindingList<DrawingsSubmittalList>();
         protected System.Collections.Generic.List<int> DeletedIds { get; } = new System.Collections.Generic.List<int>();
 
@@ -110,6 +114,14 @@ namespace Etmam
         public ucMIR()
         {
             InitializeComponent();
+            if (DesignMode) return;
+
+            _canManage = PermissionService.HasPermission(PermNames.MaterialInspectionRequest);
+            bbiNew.Enabled = _canManage;
+            bbiEdit.Enabled = _canManage;
+            bbiDelete.Enabled = _canManage;
+            bbiPrint.Enabled = _canManage;
+
             InitializeBaseGrid();
             SetupAconexStyle();
             this.Load += (s, e) => LoadData();
@@ -147,11 +159,19 @@ namespace Etmam
 
         public void LoadData()
         {
-            int prjId = Core.Session.SelectedProjectId ?? 1;
-            var data = DC.DrawingsSubmittalList.GetBy("PrjId = @PrjId AND IsDelete = 0 AND Type = @Type", new { PrjId = prjId, Type = "MIR" });
-            DataSource.Clear();
-            foreach (var item in data)
-                DataSource.Add(item);
+            var handle = ShowOverlay();
+            try
+            {
+                int prjId = Core.Session.SelectedProjectId ?? 1;
+                var data = DC.DrawingsSubmittalList.GetBy("PrjId = @PrjId AND IsDelete = 0 AND Type = @Type", new { PrjId = prjId, Type = "MIR" });
+                DataSource.Clear();
+                foreach (var item in data)
+                    DataSource.Add(item);
+            }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         public override void OnProjectChanged()
@@ -160,9 +180,22 @@ namespace Etmam
             LoadData();
         }
 
+        // نقطة الدخول الموحّدة (bbiNew والنقر المزدوج) — الفحص هنا يمنع تجاوز الصلاحية عبر
+        // النقر المزدوج الذي لا يمر بحالة تفعيل الأزرار.
         private void OpenForm(int id = 0)
         {
-            var frm    = new frmMARAddEdit();
+            if (!_canManage)
+            {
+                DevExpress.XtraEditors.XtraMessageBox.Show("ليس لديك صلاحية إدارة طلبات فحص المواد (MIR).", "غير مصرَّح",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var handle = ShowOverlay();
+            frmMARAddEdit frm;
+            try { frm = new frmMARAddEdit(); }
+            finally { CloseOverlay(handle); }
+
             var result = frm.ShowDialog(this.FindForm());
             if (result == DialogResult.OK || result == DialogResult.Abort)
                 LoadData();
@@ -176,5 +209,13 @@ namespace Etmam
 
         private void bbiPrint_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
             => PrintHelper.PrintMIR(DataSource);
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
+        }
     }
 }

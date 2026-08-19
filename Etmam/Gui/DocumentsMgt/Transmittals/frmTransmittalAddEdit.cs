@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using Core;
 using DevExpress.XtraEditors;
 using DevExpress.XtraBars;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
@@ -103,6 +104,7 @@ namespace Etmam
             _record.PreparedDate     = dtDate.EditValue as DateTime?;
             _record.PrjId            = Session.SelectedProjectId;
 
+            var handle = ShowOverlay();
             try
             {
                 if (_id > 0)
@@ -125,6 +127,10 @@ namespace Etmam
                 XtraMessageBox.Show("خطأ أثناء الحفظ: " + ex.Message, "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         private void BbiDelete_ItemClick(object sender, ItemClickEventArgs e)
@@ -134,6 +140,7 @@ namespace Etmam
             if (XtraMessageBox.Show("هل أنت متأكد من حذف هذه الإرسالية؟", "تأكيد الحذف",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
+                var handle = ShowOverlay();
                 try
                 {
                     DC.DrawingsSubmittalList.Delete(_id);
@@ -144,6 +151,10 @@ namespace Etmam
                 {
                     XtraMessageBox.Show("خطأ أثناء الحذف: " + ex.Message, "خطأ",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    CloseOverlay(handle);
                 }
             }
         }
@@ -188,9 +199,17 @@ namespace Etmam
             }
             catch (Exception ex)
             {
-                XtraMessageBox.Show($"حدث خطأ أثناء محاولة فتح برنامج البريد: {ex.Message}", "خطأ", 
+                XtraMessageBox.Show($"حدث خطأ أثناء محاولة فتح برنامج البريد: {ex.Message}", "خطأ",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

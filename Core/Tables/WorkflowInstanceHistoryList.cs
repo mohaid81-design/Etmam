@@ -19,10 +19,15 @@ namespace Core
         public int ActionBy { get; set; }
         public UsersList? ActionByUser { get; set; }
 
-        /// Approved / Rejected
+        /// Approved / Rejected / ReturnedToStep
         public string? Action { get; set; }
         public DateTime? ActionDate { get; set; }
         public string? Comment { get; set; }
+
+        /// Only set when Action == "ReturnedToStep": the StepOrder the instance was sent back to. Lets
+        /// report/print code (see PurchaseRequestPrinter.BuildReport) tell which prior "Approved" rows
+        /// were invalidated by this return versus ones still standing.
+        public int? TargetStepOrder { get; set; }
 
         public int CreatedBy { get; set; }
         public DateTime? CreatedDate { get; set; }

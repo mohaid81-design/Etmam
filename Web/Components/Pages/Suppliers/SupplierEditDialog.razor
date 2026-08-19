@@ -1,0 +1,219 @@
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>@(_isEdit ? "تعديل مورّد" : "مورّد جديد")</TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">البيانات الأساسية</MudText>
+            <MudGrid Class="mb-3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_model.Name" Label="اسم المورّد" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="_model.Type" Label="النوع" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("شركة/مؤسسه")">شركة / مؤسسة</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("فرد")">فرد</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int?" @bind-Value="_model.CategoryId" Label="المجموعة" Variant="Variant.Outlined">
+                        <MudSelectItem T="int?" Value="null">— بدون —</MudSelectItem>
+                        @foreach (var category in _categories)
+                        {
+                            <MudSelectItem T="int?" Value="category.Id">@CategoryLabel(category)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_model.Rating" Label="التقييم (0-5)" Min="0" Max="5" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_model.IsActive" Label="نشط" Color="Color.Primary" />
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">بيانات الاتصال</MudText>
+            <MudGrid Class="mb-3">
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.PhoneNumber" Label="الهاتف" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Email" Label="البريد الإلكتروني" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.Address" Label="العنوان" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.ContactName1" Label="مسؤول التواصل 1" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.ContactPhone1" Label="هاتف مسؤول التواصل 1" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.ContactName2" Label="مسؤول التواصل 2" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.ContactPhone2" Label="هاتف مسؤول التواصل 2" Variant="Variant.Outlined" /></MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">البيانات التجارية والضريبية</MudText>
+            <MudGrid Class="mb-3">
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.CommercialNumber" Label="رقم السجل التجاري" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.CommercialManager" Label="المدير المسؤول" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.CommercialIssuedDate" Label="تاريخ إصدار السجل (yyyy-MM-dd)" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.CommercialEndDate" Label="تاريخ انتهاء السجل (yyyy-MM-dd)" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="_model.CommercialAddress" Label="العنوان التجاري" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.TaxNumber" Label="الرقم الضريبي" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.VATNumber" Label="الرقم الضريبي (ضريبة القيمة المضافة)" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.VATIssuedDate" Label="تاريخ إصدار شهادة الضريبة (yyyy-MM-dd)" Variant="Variant.Outlined" /></MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">بيانات إضافية</MudText>
+            <MudGrid>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.Nationality" Label="الجنسية" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.IdNumber" Label="رقم الهوية" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.IdDate" Label="تاريخ الهوية (yyyy-MM-dd)" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" sm="6"><MudTextField @bind-Value="_model.DOB" Label="تاريخ الميلاد (yyyy-MM-dd)" Variant="Variant.Outlined" /></MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">إلغاء</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Disabled="_saving">حفظ</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int? SupplierId { get; set; }
+
+    [Inject]
+    private EtmamApiClient Api { get; set; } = null!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly FormModel _model = new() { IsActive = true };
+    private List<SupplierCategoryDto> _categories = [];
+    private bool _isEdit;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await Api.GetSupplierCategoriesAsync();
+
+        _isEdit = SupplierId is > 0;
+        if (_isEdit)
+        {
+            var dto = await Api.GetSupplierAsync(SupplierId!.Value);
+            if (dto is not null)
+            {
+                _model.Name = dto.Name;
+                _model.Type = dto.Type;
+                _model.CategoryId = dto.CategoryId;
+                _model.Rating = dto.Rating;
+                _model.IsActive = dto.IsActive ?? true;
+                _model.PhoneNumber = dto.PhoneNumber;
+                _model.Email = dto.Email;
+                _model.Address = dto.Address;
+                _model.ContactName1 = dto.ContactName1;
+                _model.ContactPhone1 = dto.ContactPhone1;
+                _model.ContactName2 = dto.ContactName2;
+                _model.ContactPhone2 = dto.ContactPhone2;
+                _model.CommercialNumber = dto.CommercialNumber;
+                _model.CommercialManager = dto.CommercialManager;
+                _model.CommercialIssuedDate = dto.CommercialIssuedDate;
+                _model.CommercialEndDate = dto.CommercialEndDate;
+                _model.CommercialAddress = dto.CommercialAddress;
+                _model.TaxNumber = dto.TaxNumber;
+                _model.VATNumber = dto.VATNumber;
+                _model.VATIssuedDate = dto.VATIssuedDate;
+                _model.Nationality = dto.Nationality;
+                _model.IdNumber = dto.IdNumber;
+                _model.IdDate = dto.IdDate;
+                _model.DOB = dto.DOB;
+            }
+        }
+    }
+
+    private static string CategoryLabel(SupplierCategoryDto c) =>
+        string.IsNullOrEmpty(c.SubCategory) ? (c.MainCategory ?? "") : $"{c.MainCategory} / {c.SubCategory}";
+
+    private async Task Save()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _saving = true;
+        try
+        {
+            if (_isEdit)
+            {
+                await Api.UpdateSupplierAsync(SupplierId!.Value, ToRequest<SupplierUpdateRequest>());
+            }
+            else
+            {
+                await Api.CreateSupplierAsync(ToRequest<SupplierCreateRequest>());
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحفظ: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private TRequest ToRequest<TRequest>() where TRequest : SupplierSaveRequest, new() => new()
+    {
+        Name = _model.Name,
+        Type = _model.Type,
+        CategoryId = _model.CategoryId,
+        Rating = _model.Rating,
+        IsActive = _model.IsActive,
+        PhoneNumber = _model.PhoneNumber,
+        Email = _model.Email,
+        Address = _model.Address,
+        ContactName1 = _model.ContactName1,
+        ContactPhone1 = _model.ContactPhone1,
+        ContactName2 = _model.ContactName2,
+        ContactPhone2 = _model.ContactPhone2,
+        CommercialNumber = _model.CommercialNumber,
+        CommercialManager = _model.CommercialManager,
+        CommercialIssuedDate = _model.CommercialIssuedDate,
+        CommercialEndDate = _model.CommercialEndDate,
+        CommercialAddress = _model.CommercialAddress,
+        TaxNumber = _model.TaxNumber,
+        VATNumber = _model.VATNumber,
+        VATIssuedDate = _model.VATIssuedDate,
+        Nationality = _model.Nationality,
+        IdNumber = _model.IdNumber,
+        IdDate = _model.IdDate,
+        DOB = _model.DOB,
+    };
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private sealed class FormModel
+    {
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public int? CategoryId { get; set; }
+        public int? Rating { get; set; }
+        public bool IsActive { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+        public string? ContactName1 { get; set; }
+        public string? ContactPhone1 { get; set; }
+        public string? ContactName2 { get; set; }
+        public string? ContactPhone2 { get; set; }
+        public string? CommercialNumber { get; set; }
+        public string? CommercialManager { get; set; }
+        public string? CommercialIssuedDate { get; set; }
+        public string? CommercialEndDate { get; set; }
+        public string? CommercialAddress { get; set; }
+        public string? TaxNumber { get; set; }
+        public string? VATNumber { get; set; }
+        public string? VATIssuedDate { get; set; }
+        public string? Nationality { get; set; }
+        public string? IdNumber { get; set; }
+        public string? IdDate { get; set; }
+        public string? DOB { get; set; }
+    }
+}

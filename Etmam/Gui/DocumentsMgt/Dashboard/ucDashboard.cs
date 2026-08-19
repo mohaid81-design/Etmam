@@ -4,6 +4,7 @@ using System.Data;
 using System.Windows.Forms;
 
 using System.Linq;
+using DevExpress.XtraSplashScreen;
 
 namespace Etmam
 {
@@ -51,7 +52,17 @@ namespace Etmam
         public override void OnProjectChanged()
         {
             base.OnProjectChanged();
-            LoadSummaryData();
+            var handle = ShowOverlay();
+            try { LoadSummaryData(); }
+            finally { CloseOverlay(handle); }
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

@@ -1,0 +1,11 @@
+@** Server-side redirect for anonymous users hitting an [Authorize] page - NavigationManager.NavigateTo
+     works here because this runs during static SSR (AuthorizeRouteView's NotAuthorized branch),
+     before the interactive circuit takes over. **@
+@inject NavigationManager Nav
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri))}", forceLoad: true);
+    }
+}

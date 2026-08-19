@@ -1,0 +1,70 @@
+<CustomPaletteCollection>
+  <Skin Name="The Bezier">
+    <SvgPalette Name="Custom Palette #1">
+      <SvgColor Name="Paint" Value="227,227,227" />
+      <SvgColor Name="Paint High" Value="255,255,255" />
+      <SvgColor Name="Paint Shadow" Value="215,215,215" />
+      <SvgColor Name="Paint Deep Shadow" Value="210,210,210" />
+      <SvgColor Name="Brush" Value="78,78,78" />
+      <SvgColor Name="Brush Light" Value="149,149,149" />
+      <SvgColor Name="Brush High" Value="78,78,78" />
+      <SvgColor Name="Brush Major" Value="191,191,191" />
+      <SvgColor Name="Brush Minor" Value="209,209,209" />
+      <SvgColor Name="Accent Paint" Value="3,131,135" />
+      <SvgColor Name="Accent Paint Light" Value="177,197,222" />
+      <SvgColor Name="Accent Brush" Value="255,255,255" />
+      <SvgColor Name="Accent Brush Light" Value="255,193,193" />
+      <SvgColor Name="Key Paint" Value="69,93,122" />
+      <SvgColor Name="Key Brush" Value="255,255,255" />
+      <SvgColor Name="Key Brush Light" Value="161,179,201" />
+      <SvgColor Name="Red" Value="226,54,66" />
+      <SvgColor Name="Green" Value="60,146,92" />
+      <SvgColor Name="Blue" Value="58,116,194" />
+      <SvgColor Name="Yellow" Value="252,169,10" />
+      <SvgColor Name="Purple" Value="156,54,234" />
+      <SvgColor Name="Black" Value="99,99,99" />
+      <SvgColor Name="Gray" Value="173,173,173" />
+      <SvgColor Name="White" Value="255,255,255" />
+      <SvgColor Name="altRed" Value="226,54,66" />
+      <SvgColor Name="altGreen" Value="60,146,92" />
+      <SvgColor Name="altBlue" Value="58,116,194" />
+      <SvgColor Name="altYellow" Value="252,169,10" />
+      <SvgColor Name="altPurple" Value="156,54,234" />
+      <SvgColor Name="altBlack" Value="99,99,99" />
+      <SvgColor Name="altWhite" Value="255,255,255" />
+    </SvgPalette>
+    <SvgPalette Name="Custom Palette #2">
+      <SvgColor Name="Paint" Value="236,240,241" />
+      <SvgColor Name="Paint High" Value="255,255,255" />
+      <SvgColor Name="Paint Shadow" Value="217,224,226" />
+      <SvgColor Name="Paint Deep Shadow" Value="217,224,226" />
+      <SvgColor Name="Brush" Value="78,78,78" />
+      <SvgColor Name="Brush Light" Value="138,155,172" />
+      <SvgColor Name="Brush High" Value="78,78,78" />
+      <SvgColor Name="Brush Major" Value="188,201,204" />
+      <SvgColor Name="Brush Minor" Value="195,210,214" />
+      <SvgColor Name="Accent Paint" Value="54,96,146" />
+      <SvgColor Name="Accent Paint Light" Value="189,195,199" />
+      <SvgColor Name="Accent Brush" Value="255,255,255" />
+      <SvgColor Name="Accent Brush Light" Value="173,187,201" />
+      <SvgColor Name="Key Paint" Value="52,73,94" />
+      <SvgColor Name="Key Brush" Value="255,255,255" />
+      <SvgColor Name="Key Brush Light" Value="135,155,175" />
+      <SvgColor Name="Red" Value="226,54,66" />
+      <SvgColor Name="Green" Value="60,146,92" />
+      <SvgColor Name="Blue" Value="58,116,194" />
+      <SvgColor Name="Yellow" Value="252,169,10" />
+      <SvgColor Name="Purple" Value="156,54,234" />
+      <SvgColor Name="Black" Value="99,99,99" />
+      <SvgColor Name="Gray" Value="173,185,196" />
+      <SvgColor Name="White" Value="255,255,255" />
+      <SvgColor Name="altRed" Value="226,54,66" />
+      <SvgColor Name="altGreen" Value="60,146,92" />
+      <SvgColor Name="altBlue" Value="58,116,194" />
+      <SvgColor Name="altYellow" Value="252,169,10" />
+      <SvgColor Name="altPurple" Value="156,54,234" />
+      <SvgColor Name="altBlack" Value="99,99,99" />
+      <SvgColor Name="altWhite" Value="255,255,255" />
+    </SvgPalette>
+  </Skin>
+</CustomPaletteCollection>

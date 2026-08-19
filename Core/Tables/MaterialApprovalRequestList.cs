@@ -10,7 +10,7 @@ namespace Core
         public int? Rev { get; set; }
         public DateTime? PreparedDate { get; set; }
         public int? Category { get; set; }
-          public int? SubCategory { get; set; }
+        public int? SubCategory { get; set; }
         public string? Description { get; set; }
         public int? PrjId { get; set; }
         public int? OverallStatus { get; set; }

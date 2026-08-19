@@ -8,6 +8,7 @@ using Core;
 using Data;
 using DevExpress.XtraBars;
 using DevExpress.XtraEditors;
+using DevExpress.XtraSplashScreen;
 using ExcelDataReader;
 
 namespace Etmam
@@ -393,6 +394,7 @@ namespace Etmam
                 return;
             }
 
+            var handle = ShowOverlay();
             try
             {
                 int prjId = Convert.ToInt32(lueProject.EditValue);
@@ -487,6 +489,7 @@ namespace Etmam
                 if (ex.InnerException != null) errorMsg += $"\nInner: {ex.InnerException.Message}";
                 XtraMessageBox.Show(errorMsg, "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally { CloseOverlay(handle); }
         }
         private int EnsureWbsCreated(string wbsCode, string wbsName, int scheduleId, int prjId, Dictionary<string, int> wbsCache, IDataHelper<ScheduleDetails> helper)
         {
@@ -517,6 +520,14 @@ namespace Etmam
             int newId = helper.Add(wbsDetail);
             wbsCache[wbsCode] = newId;
             return newId;
+        }
+
+        // ── مؤشر الانتظار ──────────────────────────────────────────────────────
+        private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);
+
+        private void CloseOverlay(IOverlaySplashScreenHandle? handle)
+        {
+            if (handle != null) SplashScreenManager.CloseOverlayForm(handle);
         }
     }
 }

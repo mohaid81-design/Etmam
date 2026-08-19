@@ -11,12 +11,39 @@
     <Folder Include="Migrations\" />
   </ItemGroup>
 
+  <!-- Explicit exclude: protects against concurrent agent builds that override
+       BaseIntermediateOutputPath to a sibling subfolder under obj\ (e.g. obj\_agentX\),
+       which narrows the SDK's default item-exclude glob so it no longer covers the
+       whole obj\ tree, letting other agents' generated obj\_agentY\**\*.cs leak into
+       this compile (CS0579 duplicate AssemblyInfo attribute errors). -->
+  <ItemGroup>
+    <Compile Remove="bin\**" />
+    <Compile Remove="obj\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.13" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.13" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
 </Project>

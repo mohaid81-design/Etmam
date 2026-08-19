@@ -6,17 +6,21 @@ namespace Core
     public class MaterialReceiveList : IBaseEntity
     {
         [Key] public int Id { get; set; }
-        public string? Code { get; set; }
-        public string? ReceiveType { get; set; } // e.g. "Supplier", "PO", "Return"
+        public int? Num { get; set; }
         public int? StoreId { get; set; }
-        public DateTime? ReceivedDate { get; set; }
         public int? StakeholderId { get; set; } // Supplier ID
+        public DateTime? ReceivedDate { get; set; }
         public string? InvoiceNo { get; set; }
-        public string? ReceiveVoucherNo { get; set; }
-        public int? PRId { get; set; }
+        public string? VoucherNo { get; set; }
+        public int? POId { get; set; }
         public string? Description { get; set; }
         public decimal? Amount { get; set; }
-        public int? PrjId { get; set; }
+
+        // حقول عرض غير مخزَّنة — تُملأ عند الطباعة فقط (انظر MaterialReceivePrinter)
+        [NotMapped] public string? StoreName { get; set; }
+        [NotMapped] public string? SupplierName { get; set; }
+        [NotMapped] public string? FormattedPONum { get; set; }
+        [NotMapped] public string? FormattedNum { get; set; }
 
         public DateTime? CreatedDate { get; set; }
         public string? CreatedMachine { get; set; }
@@ -28,5 +32,10 @@ namespace Core
         public DateTime? DeletionDate { get; set; }
         public string? DeletionMachine { get; set; }
         public int DeletionBy { get; set; }
+
+        // Optimistic-concurrency token (SQL Server ROWVERSION) — see SqlDataHelper<T> and
+        // DatabaseInitializer.GetSqlType. A save against a stale copy throws ConcurrencyConflictException
+        // instead of silently overwriting another user's edit.
+        public byte[]? RowVersion { get; set; }
     }
 }

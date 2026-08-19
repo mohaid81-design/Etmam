@@ -43,8 +43,15 @@ namespace Data
         public IDataHelper<DrawingsRegisterList> DrawingsRegisterList { get; } = new SqlDataHelper<DrawingsRegisterList>();
         public IDataHelper<DrawingsSubmittalList> DrawingsSubmittalList { get; } = new SqlDataHelper<DrawingsSubmittalList>();
         public IDataHelper<DrawingAttachment> DrawingAttachment { get; } = new SqlDataHelper<DrawingAttachment>();
+        public IDataHelper<DrawingsType> DrawingsType { get; } = new SqlDataHelper<DrawingsType>();
+        public IDataHelper<DrawingsCategory> DrawingsCategory { get; } = new SqlDataHelper<DrawingsCategory>();
+        public IDataHelper<DrawingsSubCategory> DrawingsSubCategory { get; } = new SqlDataHelper<DrawingsSubCategory>();
+        public IDataHelper<DrawingsIssuerList> DrawingsIssuerList { get; } = new SqlDataHelper<DrawingsIssuerList>();
+        public IDataHelper<DrawingsStatus> DrawingsStatus { get; } = new SqlDataHelper<DrawingsStatus>();
+        public IDataHelper<DrawingsRegisterDetails> DrawingsRegisterDetails { get; } = new SqlDataHelper<DrawingsRegisterDetails>();
         public IDataHelper<MaterialApprovalRequestList> MaterialApprovalRequestList { get; } = new SqlDataHelper<MaterialApprovalRequestList>();
         public IDataHelper<MaterialApprovalRequestDetails> MaterialApprovalRequestDetails { get; } = new SqlDataHelper<MaterialApprovalRequestDetails>();
+        public IDataHelper<ConstructionInspectionRequestList> ConstructionInspectionRequestList { get; } = new SqlDataHelper<ConstructionInspectionRequestList>();
         public IDataHelper<SubmittalCategory> SubmittalCategory { get; } = new SqlDataHelper<SubmittalCategory>();
         public IDataHelper<SubmittalSubCategory> SubmittalSubCategory { get; } = new SqlDataHelper<SubmittalSubCategory>();
         public IDataHelper<SubmittalStatus> SubmittalStatus { get; } = new SqlDataHelper<SubmittalStatus>();
@@ -54,10 +61,52 @@ namespace Data
         public IDataHelper<Units> Units { get; } = new SqlDataHelper<Units>();
         public IDataHelper<ItemsList> ItemsList { get; } = new SqlDataHelper<ItemsList>();
         public IDataHelper<StoreList> StoreList { get; } = new SqlDataHelper<StoreList>();
+        public IDataHelper<DisciplinesList> DisciplinesList { get; } = new SqlDataHelper<DisciplinesList>();
+        public IDataHelper<SecondaryDisciplinesList> SecondaryDisciplinesList { get; } = new SqlDataHelper<SecondaryDisciplinesList>();
+        public IDataHelper<InspectionActivityList> InspectionActivityList { get; } = new SqlDataHelper<InspectionActivityList>();
+        public IDataHelper<BuildingsList> BuildingsList { get; } = new SqlDataHelper<BuildingsList>();
+        public IDataHelper<FloorsList> FloorsList { get; } = new SqlDataHelper<FloorsList>();
         public IDataHelper<CostCenterList> CostCenterList { get; } = new SqlDataHelper<CostCenterList>();
+        public IDataHelper<DepartmentsList> DepartmentsList { get; } = new SqlDataHelper<DepartmentsList>();
         public IDataHelper<BudgetList> BudgetList { get; } = new SqlDataHelper<BudgetList>();
         public IDataHelper<PurchaseRequestList> PurchaseRequestList { get; } = new SqlDataHelper<PurchaseRequestList>();
         public IDataHelper<PurchaseRequestDetails> PurchaseRequestDetails { get; } = new SqlDataHelper<PurchaseRequestDetails>();
+        public IDataHelper<PurchaseOrderList> PurchaseOrderList { get; } = new SqlDataHelper<PurchaseOrderList>();
+        public IDataHelper<PurchaseOrderDetails> PurchaseOrderDetails { get; } = new SqlDataHelper<PurchaseOrderDetails>();
+        public IDataHelper<PriceQuotationList> PriceQuotationList { get; } = new SqlDataHelper<PriceQuotationList>();
+        public IDataHelper<PriceQuotationRequestList> PriceQuotationRequestList { get; } = new SqlDataHelper<PriceQuotationRequestList>();
+        public IDataHelper<PriceQuotationRequestDetails> PriceQuotationRequestDetails { get; } = new SqlDataHelper<PriceQuotationRequestDetails>();
+        public IDataHelper<PriceQuotationCompareList> PriceQuotationCompareList { get; } = new SqlDataHelper<PriceQuotationCompareList>();
+        public IDataHelper<PriceQuotationCompareDetails> PriceQuotationCompareDetails { get; } = new SqlDataHelper<PriceQuotationCompareDetails>();
+
+        // Bill of Quantities
+        public IDataHelper<BOQList> BOQList { get; } = new SqlDataHelper<BOQList>();
+        public IDataHelper<BOQSectionDetails> BOQSectionDetails { get; } = new SqlDataHelper<BOQSectionDetails>();
+        public IDataHelper<BOQItemDetails> BOQItemDetails { get; } = new SqlDataHelper<BOQItemDetails>();
+
+        // RFQ envelope (multi-vendor) — see RFQList
+        public IDataHelper<RFQList> RFQList { get; } = new SqlDataHelper<RFQList>();
+        public IDataHelper<RFQDetails> RFQDetails { get; } = new SqlDataHelper<RFQDetails>();
+        public IDataHelper<RFQVendorList> RFQVendorList { get; } = new SqlDataHelper<RFQVendorList>();
+        public IDataHelper<PRRFQLineLink> PRRFQLineLink { get; } = new SqlDataHelper<PRRFQLineLink>();
+
+        // Technical Evaluation — see TechnicalEvaluationList
+        public IDataHelper<TechnicalEvaluationList> TechnicalEvaluationList { get; } = new SqlDataHelper<TechnicalEvaluationList>();
+        public IDataHelper<TechnicalEvaluationDetails> TechnicalEvaluationDetails { get; } = new SqlDataHelper<TechnicalEvaluationDetails>();
+
+        // Award Recommendation — see AwardRecommendationList
+        public IDataHelper<AwardRecommendationList> AwardRecommendationList { get; } = new SqlDataHelper<AwardRecommendationList>();
+
+        // Negotiation rounds — see NegotiationList
+        public IDataHelper<NegotiationList> NegotiationList { get; } = new SqlDataHelper<NegotiationList>();
+
+        // PO Amendments — see POAmendmentList
+        public IDataHelper<POAmendmentList> POAmendmentList { get; } = new SqlDataHelper<POAmendmentList>();
+        public IDataHelper<POAmendmentDetails> POAmendmentDetails { get; } = new SqlDataHelper<POAmendmentDetails>();
+
+        // Approval Matrix — see ApprovalMatrixList
+        public IDataHelper<ApprovalMatrixList> ApprovalMatrixList { get; } = new SqlDataHelper<ApprovalMatrixList>();
+        public IDataHelper<ApprovalLimitList> ApprovalLimitList { get; } = new SqlDataHelper<ApprovalLimitList>();
 
         // Inventory Transactions
         public IDataHelper<MaterialReceiveList> MaterialReceiveList { get; } = new SqlDataHelper<MaterialReceiveList>();
@@ -70,6 +119,10 @@ namespace Data
         public IDataHelper<PurchaseReturnDetails> PurchaseReturnDetails { get; } = new SqlDataHelper<PurchaseReturnDetails>();
         public IDataHelper<MaterialIssueReturnList> MaterialIssueReturnList { get; } = new SqlDataHelper<MaterialIssueReturnList>();
         public IDataHelper<MaterialIssueReturnDetails> MaterialIssueReturnDetails { get; } = new SqlDataHelper<MaterialIssueReturnDetails>();
+        public IDataHelper<StockingList> StockingList { get; } = new SqlDataHelper<StockingList>();
+        public IDataHelper<StockingDetails> StockingDetails { get; } = new SqlDataHelper<StockingDetails>();
+        public IDataHelper<OpeningBalanceList> OpeningBalanceList { get; } = new SqlDataHelper<OpeningBalanceList>();
+        public IDataHelper<OpeningBalanceDetails> OpeningBalanceDetails { get; } = new SqlDataHelper<OpeningBalanceDetails>();
 
         // Workflow Engine
         public IDataHelper<WorkflowDefinitionList> WorkflowDefinitionList { get; } = new SqlDataHelper<WorkflowDefinitionList>();
@@ -77,17 +130,28 @@ namespace Data
         public IDataHelper<WorkflowStepAssigneeList> WorkflowStepAssigneeList { get; } = new SqlDataHelper<WorkflowStepAssigneeList>();
         public IDataHelper<WorkflowInstanceList> WorkflowInstanceList { get; } = new SqlDataHelper<WorkflowInstanceList>();
         public IDataHelper<WorkflowInstanceHistoryList> WorkflowInstanceHistoryList { get; } = new SqlDataHelper<WorkflowInstanceHistoryList>();
+        public IDataHelper<WorkflowInstanceStepList> WorkflowInstanceStepList { get; } = new SqlDataHelper<WorkflowInstanceStepList>();
+        public IDataHelper<WorkflowInstanceStepAssigneeList> WorkflowInstanceStepAssigneeList { get; } = new SqlDataHelper<WorkflowInstanceStepAssigneeList>();
+        public IDataHelper<WorkflowDefinitionDisciplineList> WorkflowDefinitionDisciplineList { get; } = new SqlDataHelper<WorkflowDefinitionDisciplineList>();
 
         // Generic Attachments (used by the reusable ucAttachmentAddEdit control)
         public IDataHelper<AttachmentList> AttachmentList { get; } = new SqlDataHelper<AttachmentList>();
+
+        // Backing table for NumberingService — see Core.NumberSeriesCounter
+        public IDataHelper<NumberSeriesCounter> NumberSeriesCounter { get; } = new SqlDataHelper<NumberSeriesCounter>();
+
+        // Generic entity-level audit trail — see AuditService
+        public IDataHelper<AuditLog> AuditLog { get; } = new SqlDataHelper<AuditLog>();
 
         #endregion
 
         /// <summary>
         /// Runs <paramref name="action"/> inside a single connection/transaction so that
-        /// multi-table cascading operations commit or roll back atomically.
+        /// multi-table cascading operations commit or roll back atomically. Public so
+        /// Add/Edit forms can wrap a header + its detail rows the same way the cascading
+        /// Delete* operations below already do, instead of saving each row independently.
         /// </summary>
-        private static void RunInTransaction(Action<SqlTransaction> action)
+        public static void RunInTransaction(Action<SqlTransaction> action)
         {
             using (var con = new SqlConnection(DBSetting.GetConString()))
             {
@@ -109,10 +173,120 @@ namespace Data
         }
 
         #region Procurement Special Operations
+
+        /// <summary>Deletes a Purchase Request. A PR that was never sent for approval — no
+        /// WorkflowInstanceList row exists for it at all, meaning it's still exactly the untouched
+        /// draft it started as — is purged outright (real DELETE) instead of the usual soft-delete,
+        /// since there's no approval history worth preserving for it. Any PR that ever went through
+        /// the workflow (even one later returned to Draft for edits after a rejection) keeps the
+        /// normal soft-delete, preserving its audit trail.</summary>
         public void DeletePurchaseRequest(int id) => RunInTransaction(tx =>
         {
-            PurchaseRequestDetails.DeleteBy("PRId = @id", new { id }, tx);
-            PurchaseRequestList.Delete(id, tx);
+            var existing = PurchaseRequestList.Find(id);
+            bool everSubmitted = WorkflowInstanceList.Exists(
+                "EntityName = 'PurchaseRequestList' AND EntityRecordId = @id", new { id });
+
+            if (everSubmitted)
+            {
+                PurchaseRequestDetails.DeleteBy("PRId = @id", new { id }, tx);
+                PurchaseRequestList.Delete(id, tx);
+            }
+            else
+            {
+                PurchaseRequestDetails.HardDeleteBy("PRId = @id", new { id }, tx);
+                PurchaseRequestList.HardDeleteBy("Id = @id", new { id }, tx);
+
+                // Free up the number it had reserved, if nothing has been numbered after it yet —
+                // otherwise a never-submitted draft leaves a permanent gap in the yearly sequence.
+                if (existing?.Num is > 0 && existing.RequestDate.HasValue)
+                    NumberingService.ReleaseIfLast(tx, "PurchaseRequestList", existing.RequestDate.Value.Year, existing.Num.Value);
+            }
+
+            if (existing != null) AuditService.LogDelete(tx, "PurchaseRequestList", id, existing);
+        });
+
+        public void DeletePurchaseOrder(int id) => RunInTransaction(tx =>
+        {
+            var existing = PurchaseOrderList.Find(id);
+            PurchaseOrderDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            PurchaseOrderList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "PurchaseOrderList", id, existing);
+        });
+
+        public void DeletePriceQuotationRequest(int id) => RunInTransaction(tx =>
+        {
+            var existing = PriceQuotationRequestList.Find(id);
+            PriceQuotationRequestDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            PriceQuotationRequestList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "PriceQuotationRequestList", id, existing);
+        });
+
+        public void DeletePriceQuotationCompare(int id) => RunInTransaction(tx =>
+        {
+            var existing = PriceQuotationCompareList.Find(id);
+            PriceQuotationCompareDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            PriceQuotationCompareList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "PriceQuotationCompareList", id, existing);
+        });
+
+        public void DeleteRFQ(int id) => RunInTransaction(tx =>
+        {
+            var existing = RFQList.Find(id);
+            var detailIds = RFQDetails.GetBy("RFQId = @id AND IsDelete = 0", new { id }).Select(d => d.Id).ToList();
+            foreach (var detailId in detailIds)
+                PRRFQLineLink.DeleteBy("RFQDetailId = @detailId", new { detailId }, tx);
+
+            RFQDetails.DeleteBy("RFQId = @id", new { id }, tx);
+            RFQVendorList.DeleteBy("RFQId = @id", new { id }, tx);
+            RFQList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "RFQList", id, existing);
+        });
+
+        public void DeleteTechnicalEvaluation(int id) => RunInTransaction(tx =>
+        {
+            var existing = TechnicalEvaluationList.Find(id);
+            TechnicalEvaluationDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            TechnicalEvaluationList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "TechnicalEvaluationList", id, existing);
+        });
+
+        public void DeleteAwardRecommendation(int id) => RunInTransaction(tx =>
+        {
+            var existing = AwardRecommendationList.Find(id);
+            AwardRecommendationList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "AwardRecommendationList", id, existing);
+        });
+
+        public void DeleteNegotiation(int id) => RunInTransaction(tx =>
+        {
+            var existing = NegotiationList.Find(id);
+            NegotiationList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "NegotiationList", id, existing);
+        });
+
+        public void DeletePOAmendment(int id) => RunInTransaction(tx =>
+        {
+            var existing = POAmendmentList.Find(id);
+            POAmendmentDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            POAmendmentList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "POAmendmentList", id, existing);
+        });
+
+        public void DeleteApprovalMatrix(int id) => RunInTransaction(tx =>
+        {
+            var existing = ApprovalMatrixList.Find(id);
+            ApprovalLimitList.DeleteBy("MatrixId = @id", new { id }, tx);
+            ApprovalMatrixList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "ApprovalMatrixList", id, existing);
+        });
+
+        public void DeleteBOQ(int id) => RunInTransaction(tx =>
+        {
+            var existing = BOQList.Find(id);
+            BOQItemDetails.DeleteBy("BOQId = @id", new { id }, tx);
+            BOQSectionDetails.DeleteBy("BOQId = @id", new { id }, tx);
+            BOQList.Delete(id, tx);
+            if (existing != null) AuditService.LogDelete(tx, "BOQList", id, existing);
         });
         #endregion
 
@@ -145,6 +319,25 @@ namespace Data
         {
             MaterialIssueReturnDetails.DeleteBy("ParentId = @id", new { id }, tx);
             MaterialIssueReturnList.Delete(id, tx);
+        });
+
+        public void DeleteStocking(int id) => RunInTransaction(tx =>
+        {
+            StockingDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            StockingList.Delete(id, tx);
+        });
+
+        public void DeleteOpeningBalance(int id) => RunInTransaction(tx =>
+        {
+            OpeningBalanceDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            OpeningBalanceList.Delete(id, tx);
+        });
+
+        public void DeleteDrawingsRegister(int id) => RunInTransaction(tx =>
+        {
+            DrawingsRegisterDetails.DeleteBy("ParentId = @id", new { id }, tx);
+            DrawingAttachment.DeleteBy("DrawingId = @id", new { id }, tx);
+            DrawingsRegisterList.Delete(id, tx);
         });
         #endregion
 
@@ -195,10 +388,5 @@ namespace Data
             // Fallback for types not explicitly registered as properties
             return new SqlDataHelper<T>();
         }
-
-        #region Settings
-        public void UseLocal() => DBSetting.IsLocal = true;
-        public void UseCloud() => DBSetting.IsLocal = false;
-        #endregion
     }
 }

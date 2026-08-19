@@ -1,0 +1,136 @@
+@page "/procurement/suppliers"
+@rendermode InteractiveServer
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>الموردون - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">الموردون</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        مورّد جديد
+    </MudButton>
+</MudStack>
+
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Placeholder="بحث بالاسم..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Class="mb-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTable Items="@FilteredSuppliers" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>الاسم</MudTh>
+            <MudTh>النوع</MudTh>
+            <MudTh>المجموعة</MudTh>
+            <MudTh>الهاتف</MudTh>
+            <MudTh>التقييم</MudTh>
+            <MudTh>نشط</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="الاسم">@context.Name</MudTd>
+            <MudTd DataLabel="النوع">@context.Type</MudTd>
+            <MudTd DataLabel="المجموعة">@context.CategoryName</MudTd>
+            <MudTd DataLabel="الهاتف">@context.PhoneNumber</MudTd>
+            <MudTd DataLabel="التقييم">@(context.Rating?.ToString() ?? "—")</MudTd>
+            <MudTd DataLabel="نشط">
+                @if (context.IsActive == true)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Default" Size="Size.Small" />
+                }
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteSupplier(context))" />
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا يوجد موردون.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<SupplierDto> _suppliers = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private string _search = "";
+
+    private IEnumerable<SupplierDto> FilteredSuppliers =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _suppliers
+            : _suppliers.Where(s => (s.Name ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _suppliers = await Api.GetSuppliersAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل الموردين من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchChanged(string value) => _search = value;
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<SupplierEditDialog> { { x => x.SupplierId, null } };
+        var dialog = await DialogService.ShowAsync<SupplierEditDialog>("مورّد جديد", parameters, new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<SupplierEditDialog> { { x => x.SupplierId, id } };
+        var dialog = await DialogService.ShowAsync<SupplierEditDialog>("تعديل مورّد", parameters, new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await LoadAsync();
+    }
+
+    private async Task DeleteSupplier(SupplierDto supplier)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف المورّد \"{supplier.Name}\"؟",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true)
+            return;
+
+        try
+        {
+            await Api.DeleteSupplierAsync(supplier.Id);
+            Snackbar.Add("تم حذف المورّد.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+}

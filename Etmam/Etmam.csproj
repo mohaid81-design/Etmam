@@ -6,25 +6,66 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Resources\etmam.ico</ApplicationIcon>
+    <!-- Read by Application.ProductVersion at runtime (Gui/MainPage/frmStart.cs's update-gate
+         check, SettingsForm.cs's About panel). Bump this together with ..\installer\EtmamSetup.iss's
+         MyAppVersion when cutting a release - the two aren't auto-linked (Inno's preprocessor
+         can't read an MSBuild property, and vice versa), so this is a manual two-file sync point. -->
+    <Version>1.3.0</Version>
+    <!-- Without this, the SDK appends "+<git-commit-hash>" to Application.ProductVersion (since
+         this is a git repo), which breaks frmStart.cs's System.Version.TryParse comparison and
+         looks wrong in SettingsForm.cs's About panel. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DevExpress.Win" Version="25.2.6" />
-    <PackageReference Include="DevExpress.Win.Design" Version="25.2.6" />
-    <PackageReference Include="DevExpress.Win.Dialogs" Version="25.2.6" />
-    <PackageReference Include="DevExpress.Win.Grid" Version="25.2.6" />
-    <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.6" />
-    <PackageReference Include="DevExpress.Win.Reporting" Version="25.2.6" />
+    <PackageReference Include="DevExpress.Win" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Win.Design" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Win.Dialogs" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Win.Grid" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Win.Navigation" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Win.Reporting" Version="25.2.5" />
+    <PackageReference Include="DevExpress.Document.Processor" Version="25.2.5" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Gui\CostControlMgt\ucCostControlMgt.cs">
+    <Compile Update="Gui\DocumentsMgt\ConstructionInspectionRequest\ucCIR.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Gui\DocumentsMgt\ConstructionInspectionRequest\ucCIR.cs">
+    <Compile Update="Gui\BudgetMgt\BudgetDashboard\ucBudgetDashboard.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetList\ucBudgetList.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetEditor\ucBudgetEditor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\CostBreakdownStructure\ucCostBreakdownStructure.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetImportWizard\frmBudgetImportWizard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetRevision\ucBudgetRevision.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\CashFlowForecast\ucCashFlowForecast.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetVsActual\ucBudgetVsActual.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\CostForecast\ucCostForecast.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetApprovalWorkflow\ucBudgetApprovalWorkflow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\BudgetMgt\BudgetReports\ucBudgetReports.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Gui\DocumentsMgt\DailyReport\frmEquipment.cs">
@@ -66,18 +107,60 @@
     <Compile Update="Gui\DocumentsMgt\DailyReport\ucWorkPlannedTowmorrow.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Gui\DocumentsMgt\DrawingsMgt\ucDwgMgt.cs">
+    <Compile Update="Gui\DocumentsMgt\DrawingsMgt\ucDrawingsLog.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Gui\DocumentsMgt\MaterialApprovalRequest\ucMAR.cs" />
     <Compile Update="Gui\DocumentsMgt\MaterialInspectionRequest\ucMIR.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Gui\ProjectsMgt\ucProjectMgt.cs">
+    <Compile Update="Gui\InventoryModule\Items\ucItemsMain.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Gui\SubcontractorMgt\ucSubcontractorMgt.cs">
+    <Compile Update="Gui\ProjectsModule\ProjectsList\ucProjectsList.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\NewProjectWizard\frmNewProjectWizard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectDetails\ucProjectDetails.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectTeam\ucProjectTeam.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectSchedule\ucProjectSchedule.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectBudgetSummary\ucProjectBudgetSummary.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectDocuments\ucProjectDocuments.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectRisks\ucProjectRisks.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectIssues\ucProjectIssues.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectCorrespondence\ucProjectCorrespondence.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectMeetings\ucProjectMeetings.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectProgress\ucProjectProgress.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectCostControl\ucProjectCostControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectDashboard\ucProjectDashboard.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProjectsModule\ProjectCloseout\frmProjectCloseoutWizard.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -89,31 +172,55 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneOth.cs">
+    <Compile Update="Reports\DocumentsMgt\DailyReport\rptDailyReportWorkDoneOth.cs">
       <SubType>XtraReport</SubType>
     </Compile>
-    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneMec.cs">
+    <Compile Update="Reports\DocumentsMgt\DailyReport\rptDailyReportWorkDoneMec.cs">
       <SubType>XtraReport</SubType>
     </Compile>
-    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneElc.cs">
+    <Compile Update="Reports\DocumentsMgt\DailyReport\rptDailyReportWorkDoneElc.cs">
       <SubType>XtraReport</SubType>
     </Compile>
-    <Compile Update="Reports\DailyReport\rptDailyReportWorkDoneArc.cs">
+    <Compile Update="Reports\DocumentsMgt\DailyReport\rptDailyReportWorkDoneArc.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\InventoryMg\MaterialIssueReturn\rptMaterialIssueReturnSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\InventoryMg\MaterialReceive\rptMaterialReceiveSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\InventoryMg\MaterialTransfer\rptMaterialTransferSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\InventoryMg\PurchaseReturn\rptPurchaseReturnSubReport.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Gui\ProcurementModule\PriceQuotation\frmTechnicalEvaluationAddEdit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\ProcurementModule\PurchaseOrder\frmPOAmendmentAddEdit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\WorkflowMgt\Definitions\frmApprovalMatrixAddEdit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Gui\ProcurementModule\PriceQuotation\ucRFQ.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\ProcurementModule\PurchaseOrder\ucPOAmendment.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Gui\WorkflowMgt\Definitions\ucApprovalMatrix.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Reports\ProcurementMgt\PurchaseOrder\rprPurchaseOrderLog.cs">
+      <SubType>XtraReport</SubType>
+    </Compile>
+    <Compile Update="Reports\ProcurementMgt\PurchaseOrder\rptPurchaseOrderSubReport.cs">
       <SubType>XtraReport</SubType>
     </Compile>
     <!-- Procurement Masters UserControls -->
-    <Compile Update="Gui\ProcurementMgt\Masters\ucSuppliers.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="Gui\ProcurementMgt\Masters\ucSuppliers.Designer.cs">
-      <DependentUpon>ucSuppliers.cs</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Gui\ProcurementMgt\Masters\ucSuppliers.resx">
-      <DependentUpon>ucSuppliers.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -124,7 +231,22 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Fonts\Cairo-VariableFont.ttf">
+      <LogicalName>Etmam.Resources.Fonts.Cairo-VariableFont.ttf</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\LookAndFeel\CustomPalettes.xml">
+      <LogicalName>Etmam.Resources.LookAndFeel.CustomPalettes.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Icons\*.svg">
+      <LogicalName>Etmam.Assets.Icons.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Code\Helper\" />
+    <Folder Include="Gui\CostControlMgt\" />
+    <Folder Include="Gui\ProcurementModule\Masters\" />
+    <Folder Include="Gui\SubcontractorModule\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -138,5 +260,6 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+
 
 </Project>

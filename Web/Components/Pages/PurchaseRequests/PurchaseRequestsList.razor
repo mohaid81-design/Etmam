@@ -1,0 +1,255 @@
+@page "/procurement/purchase-requests"
+@rendermode InteractiveServer
+@inject EtmamApiClient Api
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>طلبات الشراء - إتمام</PageTitle>
+
+<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4">طلبات الشراء</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+        طلب جديد
+    </MudButton>
+</MudStack>
+
+<MudTextField T="string" Value="_search" ValueChanged="OnSearchChanged" Placeholder="بحث بالغرض أو رقم الطلب..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined" Class="mb-4" />
+
+@if (_loading)
+{
+    <MudProgressLinear Indeterminate="true" Class="mb-4" />
+}
+else if (_loadError is not null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError</MudAlert>
+}
+else
+{
+    <MudTable Items="@FilteredRequests" Hover="true" Bordered="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>رقم الطلب</MudTh>
+            <MudTh>المشروع</MudTh>
+            <MudTh>المخزن</MudTh>
+            <MudTh>تاريخ الطلب</MudTh>
+            <MudTh>الغرض</MudTh>
+            <MudTh>الحالة</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="رقم الطلب">@context.FormattedNum</MudTd>
+            <MudTd DataLabel="المشروع">@(context.ProjectName ?? context.DepartmentName)</MudTd>
+            <MudTd DataLabel="المخزن">@context.StoreName</MudTd>
+            <MudTd DataLabel="تاريخ الطلب">@(context.RequestDate?.ToString("yyyy-MM-dd"))</MudTd>
+            <MudTd DataLabel="الغرض">@context.Purpose</MudTd>
+            <MudTd DataLabel="الحالة">
+                <MudChip T="string" Size="Size.Small" Color="@StatusColor(context.OverallStatus)">@context.StatusDisplay</MudChip>
+            </MudTd>
+            <MudTd>
+                <MudStack Row="true" Spacing="0">
+                    <MudTooltip Text="تعديل">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => OpenEditDialog(context.Id))" />
+                    </MudTooltip>
+
+                    @if (context.OverallStatus == PurchaseRequestStatus.Draft || context.OverallStatus == PurchaseRequestStatus.Rejected)
+                    {
+                        <MudTooltip Text="حذف">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteRequest(context))" />
+                        </MudTooltip>
+                    }
+
+                    @if (context.OverallStatus == PurchaseRequestStatus.Draft)
+                    {
+                        <MudTooltip Text="إرسال للاعتماد">
+                            <MudIconButton Icon="@Icons.Material.Filled.Send" Size="Size.Small" Color="Color.Primary" OnClick="@(() => OpenSendDialog(context.Id))" />
+                        </MudTooltip>
+                    }
+
+                    @if (context.CanCurrentUserAct)
+                    {
+                        <MudTooltip Text="اعتماد">
+                            <MudIconButton Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" OnClick="@(() => OpenWorkflowActionDialog(context.Id, isApprove: true))" />
+                        </MudTooltip>
+                        <MudTooltip Text="رفض">
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="@(() => OpenWorkflowActionDialog(context.Id, isApprove: false))" />
+                        </MudTooltip>
+                    }
+
+                    @if (context.CanCurrentUserAct || context.OverallStatus == PurchaseRequestStatus.Approved)
+                    {
+                        <MudTooltip Text="إعادة لخطوة سابقة">
+                            <MudIconButton Icon="@Icons.Material.Filled.Undo" Size="Size.Small" OnClick="@(() => OpenReturnToStepDialog(context.Id))" />
+                        </MudTooltip>
+                    }
+
+                    @if (context.OverallStatus == PurchaseRequestStatus.Approved)
+                    {
+                        <MudTooltip Text="إغلاق الطلب">
+                            <MudIconButton Icon="@Icons.Material.Filled.Lock" Size="Size.Small" OnClick="@(() => CloseRequest(context))" />
+                        </MudTooltip>
+                    }
+
+                    @if (context.OverallStatus == PurchaseRequestStatus.Rejected)
+                    {
+                        <MudTooltip Text="إعادة للمسودة">
+                            <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Size="Size.Small" OnClick="@(() => ReturnForEdit(context))" />
+                        </MudTooltip>
+                    }
+                </MudStack>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>لا توجد طلبات شراء.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+
+@code {
+    private List<PurchaseRequestDto> _requests = [];
+    private bool _loading = true;
+    private string? _loadError;
+    private string _search = "";
+
+    private IEnumerable<PurchaseRequestDto> FilteredRequests =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _requests
+            : _requests.Where(r => (r.Purpose ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)
+                                 || (r.FormattedNum ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = null;
+        try
+        {
+            _requests = await Api.GetPurchaseRequestsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            _loadError = $"تعذر تحميل طلبات الشراء من الخادم: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnSearchChanged(string value) => _search = value;
+
+    private static Color StatusColor(string? status) => status switch
+    {
+        PurchaseRequestStatus.Draft => Color.Default,
+        PurchaseRequestStatus.PendingApproval => Color.Warning,
+        PurchaseRequestStatus.Approved => Color.Success,
+        PurchaseRequestStatus.Rejected => Color.Error,
+        PurchaseRequestStatus.Closed => Color.Info,
+        _ => Color.Default
+    };
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<PurchaseRequestEditDialog> { { x => x.PurchaseRequestId, null } };
+        var dialog = await DialogService.ShowAsync<PurchaseRequestEditDialog>("طلب جديد", parameters, WideOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false }) await LoadAsync();
+    }
+
+    private async Task OpenEditDialog(int id)
+    {
+        var parameters = new DialogParameters<PurchaseRequestEditDialog> { { x => x.PurchaseRequestId, id } };
+        var dialog = await DialogService.ShowAsync<PurchaseRequestEditDialog>("تعديل طلب", parameters, WideOptions);
+        var result = await dialog.Result;
+        if (result is { Canceled: false }) await LoadAsync();
+    }
+
+    private async Task OpenSendDialog(int id)
+    {
+        var parameters = new DialogParameters<SendForApprovalDialog> { { x => x.PurchaseRequestId, id } };
+        var dialog = await DialogService.ShowAsync<SendForApprovalDialog>("إرسال للاعتماد", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false }) await LoadAsync();
+    }
+
+    private async Task OpenWorkflowActionDialog(int id, bool isApprove)
+    {
+        var parameters = new DialogParameters<WorkflowActionDialog>
+        {
+            { x => x.PurchaseRequestId, id },
+            { x => x.IsApprove, isApprove },
+        };
+        var dialog = await DialogService.ShowAsync<WorkflowActionDialog>(isApprove ? "اعتماد" : "رفض", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false }) await LoadAsync();
+    }
+
+    private async Task OpenReturnToStepDialog(int id)
+    {
+        var parameters = new DialogParameters<ReturnToStepDialog> { { x => x.PurchaseRequestId, id } };
+        var dialog = await DialogService.ShowAsync<ReturnToStepDialog>("إعادة إلى خطوة سابقة", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false }) await LoadAsync();
+    }
+
+    private async Task DeleteRequest(PurchaseRequestDto request)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الحذف",
+            $"هل تريد حذف طلب الشراء رقم \"{request.FormattedNum}\"؟ سيتم حذف جميع البنود المرتبطة.",
+            yesText: "حذف", cancelText: "إلغاء");
+        if (confirmed != true) return;
+
+        try
+        {
+            await Api.DeletePurchaseRequestAsync(request.Id);
+            Snackbar.Add("تم حذف طلب الشراء.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الحذف: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task CloseRequest(PurchaseRequestDto request)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الإغلاق",
+            $"هل تريد إغلاق طلب الشراء رقم \"{request.FormattedNum}\"؟",
+            yesText: "إغلاق", cancelText: "إلغاء");
+        if (confirmed != true) return;
+
+        try
+        {
+            await Api.ClosePurchaseRequestAsync(request.Id);
+            Snackbar.Add("تم إغلاق الطلب.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر الإغلاق: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ReturnForEdit(PurchaseRequestDto request)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "تأكيد الإعادة للمسودة",
+            $"هل تريد إعادة طلب الشراء رقم \"{request.FormattedNum}\" إلى حالة المسودة؟",
+            yesText: "إعادة", cancelText: "إلغاء");
+        if (confirmed != true) return;
+
+        try
+        {
+            await Api.ReturnPurchaseRequestForEditAsync(request.Id);
+            Snackbar.Add("تمت إعادة الطلب إلى المسودة.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"تعذر التنفيذ: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private static DialogOptions WideOptions => new() { MaxWidth = MaxWidth.Large, FullWidth = true };
+}

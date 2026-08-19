@@ -4,8 +4,11 @@
 
   <!--
     Real-MSI counterpart to ..\EtmamSetup.iss (Inno Setup, still the primary EXE installer).
-    Mirrors the same payload/behavior: self-contained single-file publish-release output,
-    Api subfolder, Cairo font install, Start Menu + Desktop shortcuts, upgrade-in-place.
+    Mirrors the same payload/behavior: self-contained folder publish-release output (NOT
+    single-file - see EtmamSetup.iss's [Files] comment: PublishSingleFile broke every DB
+    connection because Microsoft.Data.SqlClient's native SNI loader can't resolve its own
+    DLL from inside a single-file bundle), Api subfolder (still single-file - unaffected),
+    Cairo font install, Start Menu + Desktop shortcuts, upgrade-in-place.
     UpgradeCode is intentionally different from the Inno AppId - they're separate installer
     technologies and can't detect/replace each other; each just needs its own stable GUID
     across versions. Do not change UpgradeCode once this MSI is distributed.
@@ -40,27 +43,37 @@
     <StandardDirectory Id="FontsFolder" />
 
     <ComponentGroup Id="MainComponents" Directory="INSTALLFOLDER">
-      <Component Id="EtmamExe" Guid="6C6E9A3E-7A19-4E4F-9C2D-3E7A5B1F2A01">
-        <File Id="EtmamExeFile" Source="..\..\publish-release\Etmam.exe" KeyPath="yes">
-          <Shortcut Id="StartMenuShortcut"
-                     Directory="AppProgramMenuFolder"
-                     Name="Etmam"
-                     WorkingDirectory="INSTALLFOLDER"
-                     Icon="EtmamIcon.ico"
-                     Advertise="no" />
-          <Shortcut Id="DesktopShortcut"
-                     Directory="DesktopFolder"
-                     Name="Etmam"
-                     WorkingDirectory="INSTALLFOLDER"
-                     Icon="EtmamIcon.ico"
-                     Advertise="no" />
-        </File>
+      <!-- Whole publish-release folder (runtime + all its loose DLLs, deps.json,
+           runtimeconfig.json, locale satellite folders, etc.) except the Api subtree
+           (harvested separately below into ApiFolder) and .pdb debug symbols, which are
+           intentionally excluded from the end-user package. -->
+      <Files Include="..\..\publish-release\**">
+        <Exclude Files="..\..\publish-release\**\*.pdb" />
+        <Exclude Files="..\..\publish-release\Api\**" />
+      </Files>
+
+      <!-- Shortcuts target the installed path directly rather than hanging off a specific
+           harvested File element, since Files auto-harvesting doesn't let us pick the Id
+           of the Etmam.exe File it generates. -->
+      <Component Id="StartMenuShortcut" Guid="EA9A318E-63BA-4327-89CE-47E5B61CFF63">
+        <Shortcut Id="StartMenuShortcutFile"
+                   Directory="AppProgramMenuFolder"
+                   Name="Etmam"
+                   WorkingDirectory="INSTALLFOLDER"
+                   Icon="EtmamIcon.ico"
+                   Advertise="no"
+                   Target="[INSTALLFOLDER]Etmam.exe" />
+        <RegistryValue Root="HKCU" Key="Software\Etmam\Etmam" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
-      <Component Id="EtmamDllConfig" Guid="9B6E0F0D-9A2F-4F0B-8B7E-2C8B9F0A0A02">
-        <File Id="EtmamDllConfigFile" Source="..\..\publish-release\Etmam.dll.config" KeyPath="yes" />
-      </Component>
-      <Component Id="DataDllConfig" Guid="4C6C6B2A-1D3E-4B7B-9F2C-6A1E4B2C0A03">
-        <File Id="DataDllConfigFile" Source="..\..\publish-release\Data.dll.config" KeyPath="yes" />
+      <Component Id="DesktopShortcut" Guid="4896992E-4693-4984-A640-EEAC66100623">
+        <Shortcut Id="DesktopShortcutFile"
+                   Directory="DesktopFolder"
+                   Name="Etmam"
+                   WorkingDirectory="INSTALLFOLDER"
+                   Icon="EtmamIcon.ico"
+                   Advertise="no"
+                   Target="[INSTALLFOLDER]Etmam.exe" />
+        <RegistryValue Root="HKCU" Key="Software\Etmam\Etmam" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
       <!-- Start Menu uninstall entry -->
       <Component Id="UninstallShortcut" Guid="2A8E4B6C-3F1D-4A9E-8C5B-7D2E4F6A0A04">

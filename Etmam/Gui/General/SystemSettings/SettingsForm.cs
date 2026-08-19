@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -1253,119 +1254,64 @@ namespace Etmam
 
         // ════════════════════════════════════════════════════════════════
         //  SECTION: UPDATES (real — mandatory-update gate checked by frmStart)
+        //  Source of truth is the GitHub repo's Releases page (see
+        //  Etmam.Code.Update.GitHubUpdateChecker) - nothing to configure here
+        //  anymore, this card is purely informational.
         // ════════════════════════════════════════════════════════════════
         private Control BuildUpdatesPanel()
         {
-            bool canManage = SystemSettingsPermissions.CanManage(dc);
+            const string releasesUrl = "https://github.com/mohaid81-design/Etmam/releases";
 
-            var lblVersionSection = MakeLabel("آخر إصدار منشور:", bold: true);
-            lblVersionSection.Location = new Point(0, 4);
+            var lblSection = MakeLabel("مصدر التحديثات:", bold: true);
+            lblSection.Location = new Point(0, 4);
 
-            var txtLatestVersion = new TextEdit
+            var lblBody = new LabelControl
             {
-                Enabled = canManage,
-                Text = UpdateSettings.GetLatestVersion(dc) ?? "",
+                Text = "يتحقق البرنامج تلقائياً عند كل تشغيل من آخر إصدار منشور في صفحة\n" +
+                       "إصدارات GitHub أدناه. أي مستخدم يشغّل نسخة أقدم من الإصدار المنشور\n" +
+                       "هناك يُمنع من الدخول حتى يحدّثها بضغطة \"تحديث الآن\".",
                 Location = new Point(0, 32),
-                Size = new Size(120, 24),
-            };
-            txtLatestVersion.Properties.NullValuePrompt = "مثال: 1.0.1";
-            txtLatestVersion.Properties.NullValuePromptShowForEmptyValue = true;
-
-            var lblVersionHint = new LabelControl
-            {
-                Text = "أي مستخدم يشغّل نسخة أقدم من هذا الرقم يُمنع من الدخول حتى يحدّث برنامجه.\n" +
-                       "اتركه فارغاً لتعطيل هذا الفحص تماماً (لا يُمنع أحد).",
-                Location = new Point(0, 68),
                 AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(520, 36),
+                Size = new Size(520, 56),
                 ForeColor = DesignSystem.Colors.TextSecondary,
             };
 
-            var lblLocationSection = MakeLabel("مكان الحصول على التحديث:", bold: true);
-            lblLocationSection.Location = new Point(0, 116);
+            var lblLinkCaption = MakeLabel("صفحة الإصدارات:", bold: true);
+            lblLinkCaption.Location = new Point(0, 100);
 
-            var txtUpdateLocation = new TextEdit
+            var linkReleases = new HyperlinkLabelControl
             {
-                Enabled = canManage,
-                Text = UpdateSettings.GetUpdateLocation(dc) ?? "",
-                Location = new Point(96, 144),
-                Size = new Size(424, 24),
+                Text = releasesUrl,
+                Location = new Point(0, 128),
+                AutoSize = true,
             };
-            txtUpdateLocation.Properties.NullValuePrompt = @"\\server\share\Etmam\Setup أو رابط URL";
-            txtUpdateLocation.Properties.NullValuePromptShowForEmptyValue = true;
-
-            var btnBrowseLocation = new SimpleButton
+            linkReleases.Click += (s, e) =>
             {
-                Text = "استعراض...",
-                Width = 90,
-                Height = 26,
-                Enabled = canManage,
-                Location = new Point(0, 144),
-            };
-            DesignSystem.StyleOutlineButton(btnBrowseLocation);
-            btnBrowseLocation.Click += (s, e) =>
-            {
-                using var dlg = new XtraFolderBrowserDialog { SelectedPath = txtUpdateLocation.Text };
-                if (dlg.ShowDialog() == DialogResult.OK)
-                    txtUpdateLocation.Text = dlg.SelectedPath;
-            };
-
-            var lblLocationHint = new LabelControl
-            {
-                Text = "مسار مجلد شبكي (UNC) أو رابط ويب يفتحه المستخدم لتنزيل نسخة التثبيت الجديدة.\n" +
-                       "اتركه فارغاً لإخفاء زر \"فتح مكان التحديث\" من رسالة التحديث الإلزامي.",
-                Location = new Point(0, 176),
-                AutoSizeMode = LabelAutoSizeMode.None,
-                Size = new Size(520, 36),
-                ForeColor = DesignSystem.Colors.TextSecondary,
-            };
-
-            var btnSave = new SimpleButton
-            {
-                Text = "حفظ",
-                Width = 100,
-                Height = 30,
-                Enabled = canManage,
-                Location = new Point(0, 224),
-            };
-            DesignSystem.StylePrimaryButton(btnSave);
-
-            btnSave.Click += (s, e) =>
-            {
-                var handle = ShowOverlay();
                 try
                 {
-                    SystemSettingsHelper.SetString(
-                        dc, UpdateSettings.LatestVersionKey,
-                        string.IsNullOrWhiteSpace(txtLatestVersion.Text) ? null : txtLatestVersion.Text.Trim(),
-                        "آخر إصدار منشور - المستخدمون على إصدار أقدم يُمنعون من الدخول حتى التحديث");
-
-                    SystemSettingsHelper.SetString(
-                        dc, UpdateSettings.UpdateLocationKey,
-                        string.IsNullOrWhiteSpace(txtUpdateLocation.Text) ? null : txtUpdateLocation.Text.Trim(),
-                        "مسار/رابط الحصول على نسخة التثبيت الجديدة");
-
-                    XtraMessageBox.Show("تم حفظ الإعدادات بنجاح ✓", "حفظ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Process.Start(new ProcessStartInfo(releasesUrl) { UseShellExecute = true });
                 }
                 catch (Exception ex)
                 {
-                    XtraMessageBox.Show($"خطأ أثناء الحفظ:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                finally
-                {
-                    CloseOverlay(handle);
+                    XtraMessageBox.Show($"تعذّر فتح الرابط:\n{ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 
-            var content = new Panel { Height = 270, BackColor = Color.White };
-            content.Controls.AddRange(new Control[]
+            var lblHint = new LabelControl
             {
-                lblVersionSection, txtLatestVersion, lblVersionHint,
-                lblLocationSection, txtUpdateLocation, btnBrowseLocation, lblLocationHint,
-                btnSave,
-            });
+                Text = "لإصدار نسخة جديدة: أنشئ Release جديداً هناك بوسم يبدأ بالحرف v ويطابق\n" +
+                       "رقم <Version> في Etmam.csproj (مثل v1.3.1)، وأرفق ملف EtmamSetup.exe\n" +
+                       "به - لا حاجة لأي إعداد يدوي هنا.",
+                Location = new Point(0, 156),
+                AutoSizeMode = LabelAutoSizeMode.None,
+                Size = new Size(520, 52),
+                ForeColor = DesignSystem.Colors.TextSecondary,
+            };
 
-            return BuildCard("🔄  تحديث البرنامج", "الإصدار المطلوب من كل المستخدمين ومكان الحصول عليه", content, 270);
+            var content = new Panel { Height = 216, BackColor = Color.White };
+            content.Controls.AddRange(new Control[] { lblSection, lblBody, lblLinkCaption, linkReleases, lblHint });
+
+            return BuildCard("🔄  تحديث البرنامج", "الإصدار المطلوب يُقرأ تلقائياً من صفحة إصدارات GitHub", content, 216);
         }
 
         // ════════════════════════════════════════════════════════════════

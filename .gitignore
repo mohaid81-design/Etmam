@@ -19,3 +19,8 @@ installer/Output/
 
 ## Database backups - contain real data, never belong in a public repo
 Backup/
+
+## Filled-in connection provisioning files (see installer/connection-template.json) -
+## contain real DB credentials, must never be committed
+connection.local.json
+**/connection.local.json

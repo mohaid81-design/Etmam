@@ -1,0 +1,26 @@
+{
+  "//": "انسخ هذا الملف إلى connection.local.json (أو أي مكان خارج المستودع) واملأ القيم الحقيقية بنفسك - لا تطلب من مساعد ذكاء اصطناعي كتابة كلمة السر هنا، ولا ترفع النسخة المملوءة إلى git أو أي مكان آخر.",
+  "//usage": "شغّل مرة واحدة على الجهاز المستهدف: Etmam.exe --provision-connection C:\\path\\to\\connection.local.json  ثم احذف الملف بعد نجاح الإعداد.",
+
+  "ActiveProfile": "سحابي",
+  "Profiles": [
+    {
+      "Name": "محلي",
+      "Server": ".",
+      "Database": "EtmamDB",
+      "IntegratedSecurity": true,
+      "UserId": "",
+      "Password": "",
+      "Encrypt": true
+    },
+    {
+      "Name": "سحابي",
+      "Server": "tcp:etmam.database.windows.net,1433",
+      "Database": "Etmamdb",
+      "IntegratedSecurity": false,
+      "UserId": "",
+      "Password": "",
+      "Encrypt": true
+    }
+  ]
+}

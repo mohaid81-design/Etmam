@@ -12,6 +12,11 @@ namespace Etmam
         [System.STAThread]
         static void Main()
         {
+            // Headless one-time setup path (Etmam.exe --provision-connection <path>) - see
+            // ConnectionProvisioning.cs. Checked before anything else starts up.
+            if (ConnectionProvisioning.TryHandle(Environment.GetCommandLineArgs()))
+                return;
+
             AppFonts.RegisterEmbeddedFonts();
             AppLookAndFeel.Apply();
             ApplicationConfiguration.Initialize();

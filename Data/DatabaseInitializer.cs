@@ -852,6 +852,55 @@ namespace Data
                     DELETE FROM PermissionsList WHERE Id = @OtherId
                 END");
 
+            // General one-time cleanup for the class of bug the two name-drift merges above only handle
+            // for one specific pair of names each: the merges' blind `SET ParentID = @CorrectId WHERE
+            // ParentID = @OtherId` re-parents ALL of @OtherId's children onto @CorrectId even when
+            // @CorrectId already has same-named children of its own (e.g. طلبات الشراء/اوامر الشراء seeded
+            // under both إدارة المشتريات and its since-reverted إدارة المشتريات و العقود alias) — producing
+            // duplicate sibling rows with identical names, visible in frmUsersMgt's permissions tree as
+            // "أوامر الشراء"/"طلبات الشراء" appearing more than once. It also does nothing for a database
+            // where that blind reassignment already ran in a past release and the @OtherId row is already
+            // gone, leaving the duplicates permanently orphaned from any future targeted fix. This pass
+            // instead scans the whole tree for sibling rows sharing the same (ParentID, Name), keeps the
+            // lowest Id as canonical, re-parents the duplicate's own children onto the canonical row,
+            // migrates any UserPermissionStatus grants (skipping ones the user already has on the
+            // canonical row, same pattern as the merges above), then deletes the duplicate. It loops
+            // because re-parenting one level can reveal a fresh duplicate pair one level down (e.g. two
+            // "طلبات الشراء" rows each having their own "إضافة طلب شراء" child).
+            ExecuteScript(con, @"
+                DECLARE @Rounds INT = 0
+                WHILE EXISTS (
+                    SELECT 1 FROM PermissionsList
+                    GROUP BY ISNULL(ParentID, 0), Name
+                    HAVING COUNT(*) > 1
+                ) AND @Rounds < 20
+                BEGIN
+                    SET @Rounds = @Rounds + 1
+
+                    SELECT DupId, KeepId INTO #DupPairs
+                    FROM (
+                        SELECT Id AS DupId,
+                               MIN(Id) OVER (PARTITION BY ISNULL(ParentID,0), Name) AS KeepId
+                        FROM PermissionsList
+                    ) x
+                    WHERE DupId <> KeepId
+
+                    UPDATE p SET p.ParentID = d.KeepId
+                    FROM PermissionsList p
+                    JOIN #DupPairs d ON p.ParentID = d.DupId
+
+                    UPDATE ups SET ups.PermsID = d.KeepId
+                    FROM UserPermissionStatus ups
+                    JOIN #DupPairs d ON ups.PermsID = d.DupId
+                    WHERE NOT EXISTS (SELECT 1 FROM UserPermissionStatus x WHERE x.UserID = ups.UserID AND x.PermsID = d.KeepId)
+
+                    DELETE ups FROM UserPermissionStatus ups JOIN #DupPairs d ON ups.PermsID = d.DupId
+
+                    DELETE p FROM PermissionsList p JOIN #DupPairs d ON p.Id = d.DupId
+
+                    DROP TABLE #DupPairs
+                END");
+
             // Seeds the "طلب الشراء" procedure (definition + its 5 ordered steps) into the generic
             // workflow engine (see Data/WorkflowEngine.cs). Name-guarded/idempotent like the blocks
             // above. Deliberately does NOT seed WorkflowStepAssigneeList — there's no way to know which

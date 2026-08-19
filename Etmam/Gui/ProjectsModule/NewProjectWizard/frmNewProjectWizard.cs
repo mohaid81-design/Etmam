@@ -13,21 +13,31 @@ namespace Etmam
             InitializeComponent();
             if (DesignMode) return;
 
-            // Same StakeholdersList lookup pattern frmProjectAddEdit.cs:48-56 uses — lookup
-            // population stays out of the API-migration scope for this slice.
-            var dc = Data.DataContext.Shared;
-            lueOwner.Properties.DataSource = dc.StakeholdersList.GetBy("IsDelete = 0 AND IsClient = 1");
-            lueOwner.Properties.DisplayMember = "Name";
-            lueOwner.Properties.ValueMember = "Id";
-
-            lueConsultant.Properties.DataSource = dc.StakeholdersList.GetBy("IsDelete = 0 AND IsConsultant = 1");
-            lueConsultant.Properties.DisplayMember = "Name";
-            lueConsultant.Properties.ValueMember = "Id";
+            this.Load += async (s, e) => await LoadLookupsAsync();
 
             wizProject.SelectedPageChanged += (s, e) =>
             {
                 if (wizProject.SelectedPage == wizPageReview) PopulateReview();
             };
+        }
+
+        private async Task LoadLookupsAsync()
+        {
+            try
+            {
+                lueOwner.Properties.DataSource = await ApiClient.GetProjectClientsAsync();
+                lueOwner.Properties.DisplayMember = "Name";
+                lueOwner.Properties.ValueMember = "Id";
+
+                lueConsultant.Properties.DataSource = await ApiClient.GetProjectConsultantsAsync();
+                lueConsultant.Properties.DisplayMember = "Name";
+                lueConsultant.Properties.ValueMember = "Id";
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show($"تعذّر تحميل قوائم العملاء/الاستشاريين:\n{ex.Message}", "خطأ",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+            }
         }
 
         private void PopulateReview()

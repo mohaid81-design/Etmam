@@ -20,18 +20,30 @@ namespace Etmam
 
             gvProjects.DoubleClick += async (s, e) => await OpenEditAsync();
 
-            this.Load += async (s, e) => await LoadDataAsync();
+            this.Load += async (s, e) =>
+            {
+                await LoadClientFilterAsync();
+                await LoadDataAsync();
+            };
+        }
+
+        private async Task LoadClientFilterAsync()
+        {
+            try
+            {
+                lueClient.Properties.DataSource = await ApiClient.GetProjectClientsAsync();
+                lueClient.Properties.DisplayMember = "Name";
+                lueClient.Properties.ValueMember = "Id";
+            }
+            catch
+            {
+                // Best-effort: the client filter just has no options to pick from if this fails,
+                // same as any other lookup-population failure elsewhere in this screen.
+            }
         }
 
         private void ConfigureFilters()
         {
-            // Client filter has real backing data (StakeholdersList) — same pattern
-            // frmProjectAddEdit.cs:48-51 uses for the same lookup.
-            var dc = Data.DataContext.Shared;
-            lueClient.Properties.DataSource = dc.StakeholdersList.GetBy("IsDelete = 0 AND IsClient = 1");
-            lueClient.Properties.DisplayMember = "Name";
-            lueClient.Properties.ValueMember = "Id";
-
             // Company/Branch/Sector/Project-manager/Status filters, saved filters, Archive/Activate,
             // and the Dashboard/Documents/Open-project actions have no backing data model anywhere
             // in the repo yet (no such concepts exist on Core.ProjectsList or Core.UsersList) — disabled
@@ -100,7 +112,7 @@ namespace Etmam
         private int? GetClientId(ProjectListItem p)
         {
             if (string.IsNullOrEmpty(p.ClientName)) return null;
-            var match = (lueClient.Properties.DataSource as List<Core.StakeholdersList>)?
+            var match = (lueClient.Properties.DataSource as List<StakeholderLookupItem>)?
                 .FirstOrDefault(s => s.Name == p.ClientName);
             return match?.Id;
         }

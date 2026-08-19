@@ -142,6 +142,30 @@ namespace Etmam
 
         public static async Task DeleteProjectAsync(int id, CancellationToken ct = default) =>
             await SendAsync(HttpMethod.Delete, $"api/projects/{id}", ct: ct).ConfigureAwait(false);
+
+        // Client/consultant lookups for ucProjectsList's filter and frmNewProjectWizard's owner/
+        // consultant pickers - GET /api/projects/clients and /consultants already existed server-side
+        // (Application.Services.ProjectsService) before either screen's dropdown was wired to them.
+        public static async Task<List<StakeholderLookupItem>> GetProjectClientsAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/projects/clients", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<StakeholderLookupItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<StakeholderLookupItem>();
+        }
+
+        public static async Task<List<StakeholderLookupItem>> GetProjectConsultantsAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/projects/consultants", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<StakeholderLookupItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<StakeholderLookupItem>();
+        }
+    }
+
+    // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).
+    public sealed class StakeholderLookupItem
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
     }
 
     public sealed class ApiLoginResult

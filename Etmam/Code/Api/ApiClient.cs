@@ -198,6 +198,15 @@ namespace Etmam
 
         public static async Task DeleteUnitAsync(int id, CancellationToken ct = default) =>
             await SendAsync(HttpMethod.Delete, $"api/units/{id}", ct: ct).ConfigureAwait(false);
+
+        // ─── Suppliers ──────────────────────────────────────────────────────
+
+        public static async Task<List<SupplierItem>> GetSuppliersAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/suppliers", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<SupplierItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<SupplierItem>();
+        }
     }
 
     // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).
@@ -215,6 +224,17 @@ namespace Etmam
         public string? Description { get; set; }
         public string? Abbreviation { get; set; }
         public string? Category { get; set; }
+    }
+
+    // Mirrors Application.Dtos.SupplierDto's wire shape - only the read side (GET /api/suppliers)
+    // is wired up so far; frmSupplierSelect only needs Id/Name/PhoneNumber/ContactName1, but the
+    // rest is included ready for whichever screen wires up create/update next.
+    public sealed class SupplierItem
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? ContactName1 { get; set; }
     }
 
     public sealed class ApiLoginResult

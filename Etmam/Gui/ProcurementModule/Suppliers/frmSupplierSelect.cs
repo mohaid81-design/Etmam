@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
-using Core;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 
@@ -14,13 +12,11 @@ namespace Etmam
     /// frmItemSelect / frmPurchaseRequestSelect. Opened from frmPurchaseOrderAddEdit.btnSupplier.</summary>
     public partial class frmSupplierSelect : XtraForm
     {
-        protected DataContext DC => Data.DataContext.Shared;
-
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         [Browsable(false)]
-        public StakeholdersList? SelectedSupplier { get; private set; }
+        public SupplierItem? SelectedSupplier { get; private set; }
 
-        private List<StakeholdersList> _allSuppliers = new();
+        private List<SupplierItem> _allSuppliers = new();
 
         public frmSupplierSelect()
         {
@@ -28,11 +24,11 @@ namespace Etmam
             DesignSystem.ApplyCairoFont(this);
         }
 
-        protected override void OnLoad(EventArgs e)
+        protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             SetupGrid();
-            LoadData();
+            await LoadDataAsync();
         }
 
         private void SetupGrid()
@@ -40,17 +36,18 @@ namespace Etmam
             gridView1.DoubleClick += (s, e) => ConfirmSelection();
 
             bbiSelect.ItemClick += (s, e) => ConfirmSelection();
-            bbiRefresh.ItemClick += (s, e) => LoadData();
-            btnAdd.ItemClick += (s, e) => AddNewSupplier();
+            bbiRefresh.ItemClick += async (s, e) => await LoadDataAsync();
+            btnAdd.ItemClick += async (s, e) => await AddNewSupplierAsync();
             barEditItem1.EditValueChanged += (s, e) => ApplyFilter(barEditItem1.EditValue?.ToString());
         }
 
-        private void LoadData()
+        private async Task LoadDataAsync()
         {
             var handle = ShowOverlay();
             try
             {
-                _allSuppliers = DC.StakeholdersList.GetBy("IsDelete = 0").OrderBy(s => s.Name).ToList();
+                _allSuppliers = await ApiClient.GetSuppliersAsync();
+                _allSuppliers = _allSuppliers.OrderBy(s => s.Name).ToList();
                 ApplyFilter(barEditItem1.EditValue?.ToString());
             }
             catch (Exception ex)
@@ -74,11 +71,11 @@ namespace Etmam
                     (s.PhoneNumber?.Contains(term, StringComparison.OrdinalIgnoreCase) == true) ||
                     (s.ContactName1?.Contains(term, StringComparison.OrdinalIgnoreCase) == true)).ToList();
 
-            gridControl1.DataSource = new BindingList<StakeholdersList>(filtered);
+            gridControl1.DataSource = new BindingList<SupplierItem>(filtered);
             barStaticItem1.Caption = $"عدد السجلات : {filtered.Count}";
         }
 
-        private void AddNewSupplier()
+        private async Task AddNewSupplierAsync()
         {
             var handle = ShowOverlay();
             frmSupplierAddEdit frm;
@@ -88,13 +85,13 @@ namespace Etmam
             {
                 if (frm.ShowDialog(this) != DialogResult.OK) return;
 
-                LoadData();
+                await LoadDataAsync();
             }
         }
 
         private void ConfirmSelection()
         {
-            if (gridView1.GetFocusedRow() is not StakeholdersList supplier)
+            if (gridView1.GetFocusedRow() is not SupplierItem supplier)
             {
                 XtraMessageBox.Show("يرجى اختيار مورد.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;

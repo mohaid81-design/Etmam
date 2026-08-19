@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using Core;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 
@@ -11,9 +9,8 @@ namespace Etmam
 {
     public partial class frmUnitAddEdit : DevExpress.XtraEditors.XtraForm
     {
-        private readonly DataContext dc = Data.DataContext.Shared;
         private int _id;
-        private Units? _entity;
+        private UnitItem? _entity;
 
         public frmUnitAddEdit(int id = 0)
         {
@@ -26,7 +23,7 @@ namespace Etmam
             txtDescription.EditValueChanged += (s, e) => RevalidateField(txtDescription, !string.IsNullOrWhiteSpace(txtDescription.Text));
             txtAbbreviation.EditValueChanged += (s, e) => RevalidateField(txtAbbreviation, !string.IsNullOrWhiteSpace(txtAbbreviation.Text));
 
-            LoadRecord();
+            this.Load += async (s, e) => await LoadRecordAsync();
         }
 
         // ── Required-field validation (green = required, salmon = missing on failed save) ───────
@@ -71,17 +68,24 @@ namespace Etmam
             return false;
         }
 
-        private void LoadRecord()
+        private async Task LoadRecordAsync()
         {
             foreach (var (control, _) in RequiredFieldChecks())
                 SetRequiredFieldState(control, true);
 
-            _entity = _id > 0 ? dc.Units.Find(_id) : new Units();
-            if (_entity == null)
+            if (_id > 0)
             {
-                XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                _entity = new Units();
+                _entity = await ApiClient.GetUnitAsync(_id);
+                if (_entity == null)
+                {
+                    XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _entity = new UnitItem();
+                }
+            }
+            else
+            {
+                _entity = new UnitItem();
             }
 
             Text = $"وحدة قياس - {(_id > 0 ? "تعديل" : "جديد")}";
@@ -90,31 +94,25 @@ namespace Etmam
             txtCategory.Text = _entity.Category ?? "";
         }
 
-        private bool Save()
+        private async Task<bool> SaveAsync()
         {
             if (!ValidateRequiredFields()) return false;
 
             var handle = ShowOverlay();
             try
             {
-                _entity ??= new Units();
+                _entity ??= new UnitItem();
                 _entity.Description = txtDescription.Text.Trim();
                 _entity.Abbreviation = txtAbbreviation.Text.Trim();
                 _entity.Category = string.IsNullOrWhiteSpace(txtCategory.Text) ? null : txtCategory.Text.Trim();
 
                 if (_id > 0)
                 {
-                    _entity.UpdateDate = DateTime.Now;
-                    _entity.UpdateMachine = Session.Machine;
-                    _entity.UpdateBy = Session.CurrentUser?.Id ?? 1;
-                    dc.Units.Edit(_id, _entity);
+                    await ApiClient.UpdateUnitAsync(_id, _entity);
                 }
                 else
                 {
-                    _entity.CreatedDate = DateTime.Now;
-                    _entity.CreatedMachine = Session.Machine;
-                    _entity.CreatedBy = Session.CurrentUser?.Id ?? 1;
-                    _id = dc.Units.Add(_entity);
+                    _id = await ApiClient.CreateUnitAsync(_entity);
                     _entity.Id = _id;
                 }
 
@@ -131,19 +129,19 @@ namespace Etmam
             }
         }
 
-        private void btnSaveClose_Click(object sender, EventArgs e)
+        private async void btnSaveClose_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void btnSaveNew_Click(object sender, EventArgs e)
+        private async void btnSaveNew_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
 
             _id = 0;
-            _entity = new Units();
+            _entity = new UnitItem();
             Text = "وحدة قياس - جديد";
             txtDescription.Text = "";
             txtAbbreviation.Text = "";

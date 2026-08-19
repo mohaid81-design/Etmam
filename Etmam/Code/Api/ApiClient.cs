@@ -163,6 +163,41 @@ namespace Etmam
             return await response.Content.ReadFromJsonAsync<List<StakeholderLookupItem>>(JsonOptions, ct).ConfigureAwait(false)
                 ?? new List<StakeholderLookupItem>();
         }
+
+        // ─── Units ──────────────────────────────────────────────────────────
+
+        public static async Task<List<UnitItem>> GetUnitsAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/units", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<UnitItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<UnitItem>();
+        }
+
+        public static async Task<UnitItem?> GetUnitAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/units/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<UnitItem>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateUnitAsync(UnitItem unit, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/units", unit, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateUnitAsync(int id, UnitItem unit, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/units/{id}", unit, ct).ConfigureAwait(false);
+
+        public static async Task DeleteUnitAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/units/{id}", ct: ct).ConfigureAwait(false);
     }
 
     // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).
@@ -170,6 +205,16 @@ namespace Etmam
     {
         public int Id { get; set; }
         public string? Name { get; set; }
+    }
+
+    // Mirrors Application.Dtos.UnitDto/UnitSaveRequest's wire shape - same class serves GET
+    // responses and POST/PUT bodies (Id is simply ignored server-side on write).
+    public sealed class UnitItem
+    {
+        public int Id { get; set; }
+        public string? Description { get; set; }
+        public string? Abbreviation { get; set; }
+        public string? Category { get; set; }
     }
 
     public sealed class ApiLoginResult

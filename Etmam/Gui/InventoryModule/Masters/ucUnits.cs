@@ -8,7 +8,6 @@ using System.Text;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
-using Core;
 using Data;
 
 namespace Etmam
@@ -30,7 +29,7 @@ namespace Etmam
 
             DesignSystem.ApplyCairoFont(this);
 
-            this.Load += (s, e) => LoadData();
+            this.Load += async (s, e) => await LoadDataAsync();
 
             // Wire Toolbar Events
             bbiNew.ItemClick += bbiNew_ItemClick;
@@ -40,24 +39,22 @@ namespace Etmam
             bbiPrint.ItemClick += bbiPrint_ItemClick;
 
             // Double click grid row to edit
-            gridView1.DoubleClick += (s, e) =>
+            gridView1.DoubleClick += async (s, e) =>
             {
-                var row = gridView1.GetFocusedRow() as Units;
+                var row = gridView1.GetFocusedRow() as UnitItem;
                 if (row != null)
                 {
-                    OpenAddEdit(row.Id);
+                    await OpenAddEditAsync(row.Id);
                 }
             };
         }
 
-        public void LoadData()
+        public async Task LoadDataAsync()
         {
             var handle = ShowOverlay();
             try
             {
-                var dc = Data.DataContext.Shared;
-                var data = dc.Units.GetBy("IsDelete = 0");
-                gridControl1.DataSource = data.ToList();
+                gridControl1.DataSource = await ApiClient.GetUnitsAsync();
             }
             catch (Exception ex)
             {
@@ -71,7 +68,7 @@ namespace Etmam
 
         // نقطة الدخول الموحّدة (bbiNew/bbiEdit والنقر المزدوج) — الفحص هنا يمنع تجاوز الصلاحية عبر
         // النقر المزدوج الذي لا يمر بحالة تفعيل الأزرار.
-        private void OpenAddEdit(int id)
+        private async Task OpenAddEditAsync(int id)
         {
             if (!_canManage)
             {
@@ -89,30 +86,30 @@ namespace Etmam
             {
                 if (frm.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    LoadData();
+                    await LoadDataAsync();
                 }
             }
         }
 
-        private void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            OpenAddEdit(0);
+            await OpenAddEditAsync(0);
         }
 
-        private void bbiEdit_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiEdit_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            var row = gridView1.GetFocusedRow() as Units;
+            var row = gridView1.GetFocusedRow() as UnitItem;
             if (row == null)
             {
                 XtraMessageBox.Show("يرجى تحديد وحدة قياس لتعديلها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenAddEdit(row.Id);
+            await OpenAddEditAsync(row.Id);
         }
 
-        private void bbiDelete_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiDelete_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            var row = gridView1.GetFocusedRow() as Units;
+            var row = gridView1.GetFocusedRow() as UnitItem;
             if (row == null)
             {
                 XtraMessageBox.Show("يرجى تحديد وحدة قياس لحذفها.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -124,14 +121,9 @@ namespace Etmam
                 var handle = ShowOverlay();
                 try
                 {
-                    row.IsDelete = true;
-                    row.DeletionDate = DateTime.Now;
-                    row.DeletionMachine = Session.Machine;
-                    row.DeletionBy = Session.CurrentUser?.Id ?? 1;
-
-                    Data.DataContext.Shared.Units.Edit(row.Id, row);
+                    await ApiClient.DeleteUnitAsync(row.Id);
                     XtraMessageBox.Show("تم حذف وحدة القياس بنجاح.", "حذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadData();
+                    await LoadDataAsync();
                 }
                 catch (Exception ex)
                 {
@@ -156,14 +148,14 @@ namespace Etmam
             }
         }
 
-        private void bbiRefresh_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiRefresh_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            LoadData();
+            await LoadDataAsync();
         }
 
-        public void OnProjectChanged()
+        public async void OnProjectChanged()
         {
-            LoadData();
+            await LoadDataAsync();
         }
 
         // ── مؤشر الانتظار ──────────────────────────────────────────────────────

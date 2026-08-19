@@ -32,12 +32,18 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-; Ship the self-contained single-file build - includes the .NET runtime, no separate
-; .NET install needed on the target machine.
-; .pdb debug symbols are intentionally excluded from the end-user package.
-Source: "{#MyPublishDir}\Etmam.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyPublishDir}\Etmam.dll.config"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyPublishDir}\Data.dll.config"; DestDir: "{app}"; Flags: ignoreversion
+; Ship the self-contained build as a plain folder (NOT single-file) - includes the .NET runtime,
+; no separate .NET install needed on the target machine. .pdb debug symbols are intentionally
+; excluded from the end-user package.
+;
+; NOT single-file: publishing Etmam.exe with PublishSingleFile=true made every DB connection
+; attempt fail with a swallowed DllNotFoundException (SNIInitialize) - confirmed via
+; Data/DBSetting.cs's db-connect-error.log on an actually-installed machine. Microsoft.Data.
+; SqlClient's native SNI loader can't resolve its own DLL's location when Assembly.Location is
+; empty, which is exactly what happens inside a single-file bundle. A plain folder deployment
+; sidesteps this: Microsoft.Data.SqlClient.SNI.dll just sits as a normal loose file next to
+; Etmam.exe, the same way it already does for the Api project below.
+Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Excludes: "\Api\*,*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; The Api project, self-contained single-file published the same way, in a sibling "Api"
 ; folder - Etmam.exe launches it automatically on startup (see Etmam/Code/Api/ApiProcessManager.cs)
 ; by looking for "<install dir>\Api\Api.exe". Excludes are publish-output noise that isn't

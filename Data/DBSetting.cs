@@ -105,6 +105,12 @@ namespace Data
 
         public static async Task<bool> CanConnectAsync() => await CanConnectAsync(GetConString());
 
+        /// <summary>Diagnostic-only: the full exception from the most recent failed
+        /// CanConnectAsync call. frmStart's "فشل الاتصال" gate has no path to show error detail
+        /// to the user, so this exists purely to be read from a debugger/log during
+        /// troubleshooting - never shown in the UI.</summary>
+        public static Exception? LastConnectError { get; private set; }
+
         public static async Task<bool> CanConnectAsync(string connectionString)
         {
             try
@@ -112,11 +118,22 @@ namespace Data
                 using (var con = new SqlConnection(connectionString))
                 {
                     await con.OpenAsync();
+                    LastConnectError = null;
                     return true;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                LastConnectError = ex;
+                try
+                {
+                    var logPath = System.IO.Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Etmam", "db-connect-error.log");
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath)!);
+                    System.IO.File.WriteAllText(logPath, $"{DateTime.Now:O}\n{ex}\n");
+                }
+                catch { /* best effort */ }
                 return false;
             }
         }

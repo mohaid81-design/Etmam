@@ -22,8 +22,8 @@ namespace Api.Controllers
             int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
 
         [HttpGet]
-        public async Task<ActionResult<List<StoreDto>>> GetAll(CancellationToken ct) =>
-            Ok(await _storesService.GetAllAsync(ct));
+        public async Task<ActionResult<List<StoreDto>>> GetAll([FromQuery] int? projectId, CancellationToken ct) =>
+            Ok(await _storesService.GetAllAsync(projectId, ct));
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<StoreDto>> GetById(int id, CancellationToken ct)

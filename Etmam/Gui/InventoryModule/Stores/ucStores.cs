@@ -33,7 +33,7 @@ namespace Etmam
             bbiDelete.Enabled = _allowed;
             bbiPrint.Enabled = _allowed;
 
-            this.Load += (s, e) => LoadData();
+            this.Load += async (s, e) => await LoadDataAsync();
 
             btnOpen.ItemClick += btnOpen_ItemClick;
 
@@ -42,14 +42,14 @@ namespace Etmam
             gridView1.FocusedRowChanged += (s, e) => UpdateButtonStates();
 
             // Double click grid row to edit
-            gridView1.DoubleClick += (s, e) =>
+            gridView1.DoubleClick += async (s, e) =>
             {
                 if (!_allowed) return;
 
-                var row = gridView1.GetFocusedRow() as StoreList;
+                var row = gridView1.GetFocusedRow() as StoreItem;
                 if (row != null)
                 {
-                    OpenAddEdit(row.Id);
+                    await OpenAddEditAsync(row.Id);
                 }
             };
         }
@@ -59,7 +59,7 @@ namespace Etmam
         // ولو توفرت الصلاحية (لا فائدة من تفعيل زر سيرفضه bbiDelete_ItemClick على أي حال).
         private void UpdateButtonStates()
         {
-            var row = gridView1.GetFocusedRow() as StoreList;
+            var row = gridView1.GetFocusedRow() as StoreItem;
 
             btnOpen.Enabled = _allowed && row != null;
             bbiEdit.Enabled = _allowed && row != null;
@@ -72,7 +72,7 @@ namespace Etmam
         // فتح للعرض فقط (بلا حفظ) — بخلاف bbiEdit الذي يفتح للتعديل الكامل.
         private void btnOpen_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            var row = gridView1.GetFocusedRow() as StoreList;
+            var row = gridView1.GetFocusedRow() as StoreItem;
             if (row == null)
             {
                 XtraMessageBox.Show("يرجى تحديد مخزن لفتحه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -90,18 +90,16 @@ namespace Etmam
             }
         }
 
-        public void LoadData()
+        public async Task LoadDataAsync()
         {
             var handle = ShowOverlay();
             try
             {
-                var dc = Data.DataContext.Shared;
                 int prjId = Session.SelectedProjectId ?? 0;
-                var data = (prjId > 0 && !Session.IsSingleProjectUser)
-                    ? dc.StoreList.GetBy("(PrjId = @PrjId OR PrjId IS NULL) AND IsDelete = 0", new { PrjId = prjId })
-                    : dc.StoreList.GetBy("IsDelete = 0");
+                int? projectFilter = (prjId > 0 && !Session.IsSingleProjectUser) ? prjId : null;
+                var data = await ApiClient.GetStoresAsync(projectFilter);
 
-                gridControl1.DataSource = data.ToList();
+                gridControl1.DataSource = data;
                 UpdateButtonStates();
             }
             catch (Exception ex)
@@ -114,7 +112,7 @@ namespace Etmam
             }
         }
 
-        private void OpenAddEdit(int id)
+        private async Task OpenAddEditAsync(int id)
         {
             var handle = ShowOverlay();
             frmStoreAddEdit frm;
@@ -125,30 +123,30 @@ namespace Etmam
             {
                 if (frm.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    LoadData();
+                    await LoadDataAsync();
                 }
             }
         }
 
-        private void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiNew_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            OpenAddEdit(0);
+            await OpenAddEditAsync(0);
         }
 
-        private void bbiEdit_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiEdit_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            var row = gridView1.GetFocusedRow() as StoreList;
+            var row = gridView1.GetFocusedRow() as StoreItem;
             if (row == null)
             {
                 XtraMessageBox.Show("يرجى تحديد مخزن لتعديله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenAddEdit(row.Id);
+            await OpenAddEditAsync(row.Id);
         }
 
-        private void bbiDelete_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiDelete_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            var row = gridView1.GetFocusedRow() as StoreList;
+            var row = gridView1.GetFocusedRow() as StoreItem;
             if (row == null)
             {
                 XtraMessageBox.Show("يرجى تحديد مخزن لحذفه.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -168,14 +166,9 @@ namespace Etmam
                 var handle = ShowOverlay();
                 try
                 {
-                    row.IsDelete = true;
-                    row.DeletionDate = DateTime.Now;
-                    row.DeletionMachine = Session.Machine;
-                    row.DeletionBy = Session.CurrentUser?.Id ?? 1;
-
-                    Data.DataContext.Shared.StoreList.Edit(row.Id, row);
+                    await ApiClient.DeleteStoreAsync(row.Id);
                     XtraMessageBox.Show("تم حذف المخزن بنجاح.", "حذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadData();
+                    await LoadDataAsync();
                 }
                 catch (Exception ex)
                 {
@@ -200,14 +193,14 @@ namespace Etmam
             }
         }
 
-        private void bbiRefresh_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private async void bbiRefresh_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            LoadData();
+            await LoadDataAsync();
         }
 
-        public void OnProjectChanged()
+        public async void OnProjectChanged()
         {
-            LoadData();
+            await LoadDataAsync();
         }
 
         private IOverlaySplashScreenHandle ShowOverlay() => SplashScreenManager.ShowOverlayForm(this);

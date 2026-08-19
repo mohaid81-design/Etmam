@@ -207,6 +207,19 @@ namespace Etmam
             return await response.Content.ReadFromJsonAsync<List<SupplierItem>>(JsonOptions, ct).ConfigureAwait(false)
                 ?? new List<SupplierItem>();
         }
+
+        // ─── Stores ─────────────────────────────────────────────────────────
+
+        public static async Task<List<StoreItem>> GetStoresAsync(int? projectId = null, CancellationToken ct = default)
+        {
+            var url = projectId is int pid ? $"api/stores?projectId={pid}" : "api/stores";
+            var response = await SendAsync(HttpMethod.Get, url, ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<StoreItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<StoreItem>();
+        }
+
+        public static async Task DeleteStoreAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/stores/{id}", ct: ct).ConfigureAwait(false);
     }
 
     // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).
@@ -235,6 +248,17 @@ namespace Etmam
         public string? Name { get; set; }
         public string? PhoneNumber { get; set; }
         public string? ContactName1 { get; set; }
+    }
+
+    // Mirrors Application.Dtos.StoreDto's wire shape.
+    public sealed class StoreItem
+    {
+        public int Id { get; set; }
+        public int? Code { get; set; }
+        public string? Name { get; set; }
+        public bool? IsActive { get; set; }
+        public int? PrjId { get; set; }
+        public string? ProjectName { get; set; }
     }
 
     public sealed class ApiLoginResult

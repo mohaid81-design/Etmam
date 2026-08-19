@@ -18,9 +18,16 @@ namespace Application.Services
             _db = db;
         }
 
-        public async Task<List<StoreDto>> GetAllAsync(CancellationToken ct = default)
+        // projectId narrows to that project's stores plus shared (PrjId == null) ones - matches
+        // Etmam/Gui/InventoryModule/Stores/ucStores.cs's own filter for a multi-project user with
+        // a project selected. Null shows everything (single-project users, or no selection yet).
+        public async Task<List<StoreDto>> GetAllAsync(int? projectId = null, CancellationToken ct = default)
         {
-            var stores = await _db.StoreList.OrderBy(s => s.Name).ToListAsync(ct);
+            var query = _db.StoreList.Where(s => !s.IsDelete);
+            if (projectId is int pid)
+                query = query.Where(s => s.PrjId == pid || s.PrjId == null);
+
+            var stores = await query.OrderBy(s => s.Name).ToListAsync(ct);
             var projectNamesById = await _db.ProjectsList.ToDictionaryAsync(p => p.Id, p => p.Name, ct);
             return stores.Select(s => ToDto(s, projectNamesById)).ToList();
         }

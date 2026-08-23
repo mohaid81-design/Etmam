@@ -44,12 +44,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; DllNotFoundException (Microsoft.Data.SqlClient's native SNI loader can't resolve its own DLL's
 ; location when Assembly.Location is empty, which is exactly what happens in a single-file bundle).
 Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Excludes: "\Api\*,*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
-; The Api project, self-contained single-file published the same way, in a sibling "Api"
-; folder - Etmam.exe launches it automatically on startup (see Etmam/Code/Api/ApiProcessManager.cs)
-; by looking for "<install dir>\Api\Api.exe". Excludes are publish-output noise that isn't
-; needed at runtime: .pdb symbols, the IIS-only web.config, and the dev-only appsettings file
-; (appsettings.json - the one that IS shipped - still needs its ConnectionStrings:DefaultConnection
-; and Jwt:Key filled in with real production values before this installer is distributed; see
+; The Api project, self-contained folder-published the same way (also NOT single-file - see
+; EtmamSetup.iss's matching comment), in a sibling "Api" folder - Etmam.exe launches it
+; automatically on startup (see Etmam/Code/Api/ApiProcessManager.cs) by looking for
+; "<install dir>\Api\Api.exe". Excludes are publish-output noise that isn't needed at runtime:
+; .pdb symbols, the IIS-only web.config, and the dev-only appsettings file (appsettings.json -
+; the one that IS shipped - still needs its ConnectionStrings:DefaultConnection and Jwt:Key
+; filled in with real production values before this installer is distributed; see
 ; docs/api-migration-checklist.md).
 Source: "{#MyPublishDir}\Api\*"; DestDir: "{app}\Api"; Excludes: "*.pdb,\BuildHost-net472\*,\BuildHost-netcore\*,\web.config,\appsettings.Development.json"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Properly install Cairo (a variable font) as a real Windows system font. The app also

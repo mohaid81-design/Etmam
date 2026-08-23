@@ -7,8 +7,8 @@
     Mirrors the same payload/behavior: self-contained folder publish-release output (NOT
     single-file - see EtmamSetup.iss's [Files] comment: PublishSingleFile broke every DB
     connection because Microsoft.Data.SqlClient's native SNI loader can't resolve its own
-    DLL from inside a single-file bundle), Api subfolder (still single-file - unaffected),
-    Cairo font install, Start Menu + Desktop shortcuts, upgrade-in-place.
+    DLL from inside a single-file bundle), Api subfolder (same fix - also folder-published,
+    not single-file), Cairo font install, Start Menu + Desktop shortcuts, upgrade-in-place.
     UpgradeCode is intentionally different from the Inno AppId - they're separate installer
     technologies and can't detect/replace each other; each just needs its own stable GUID
     across versions. Do not change UpgradeCode once this MSI is distributed.
@@ -87,20 +87,27 @@
     </ComponentGroup>
 
     <ComponentGroup Id="ApiComponents" Directory="ApiFolder">
-      <Component Id="ApiExe" Guid="7D3E5A1C-2B4F-4E8A-9D6C-1A3B5C7E0A05">
-        <File Id="ApiExeFile" Source="..\..\publish-release\Api\Api.exe" KeyPath="yes" />
-      </Component>
-      <Component Id="ApiAppsettings" Guid="1E4F6B2D-3C5A-4F9B-8E7D-2B4C6D8F0A06">
-        <File Id="ApiAppsettingsFile" Source="..\..\publish-release\Api\appsettings.json" KeyPath="yes" />
-      </Component>
-      <!-- aspnetcorev2_inprocess.dll (IIS in-process hosting module - unused, Api runs
-           self-hosted under Kestrel, never behind IIS) and Microsoft.Data.SqlClient.SNI.dll
-           (native SNI - confirmed unneeded: a real SQL query against UsersList succeeded with
-           neither file present, IncludeNativeLibrariesForSelfExtract bundles what's actually
-           needed straight into Api.exe) used to ship here as loose files from an earlier publish
-           invocation. Current `dotnet publish` (self-contained, PublishSingleFile,
-           IncludeNativeLibrariesForSelfExtract) doesn't produce them at all, so they were
-           dropped from this component group rather than left as stale hardcoded requirements. -->
+      <!-- Whole Api publish-release subfolder (Api.dll, deps.json, runtimeconfig.json, every
+           loose runtime/dependency DLL including Microsoft.Data.SqlClient.SNI.dll, locale
+           satellite folders, etc.) - NOT just Api.exe + appsettings.json as this used to
+           hardcode. That old assumption (Api still single-file, IncludeNativeLibrariesForSelfExtract
+           bundling everything needed straight into Api.exe) was wrong: Api.exe hit the exact same
+           SNI DllNotFoundException as Etmam.exe once actually exercised through a real
+           /api/auth/login call (Assembly.Location empty inside a single-file bundle), so Api is
+           now folder-published too (see EtmamSetup.iss's [Files] comment) and needs its whole
+           output tree harvested the same way MainComponents does above - hardcoding 2 files here
+           silently dropped Api.dll itself from the package, which surfaces at runtime as "The
+           application to execute does not exist: '...\Api\Api.dll'" since Api.exe is just the
+           native apphost stub without it. Excludes mirror EtmamSetup.iss's Api Source line:
+           .pdb symbols, the IIS-only web.config, BuildHost-* (Roslyn design-time noise, not
+           needed at runtime), and the dev-only appsettings file. -->
+      <Files Include="..\..\publish-release\Api\**">
+        <Exclude Files="..\..\publish-release\Api\**\*.pdb" />
+        <Exclude Files="..\..\publish-release\Api\web.config" />
+        <Exclude Files="..\..\publish-release\Api\BuildHost-net472\**" />
+        <Exclude Files="..\..\publish-release\Api\BuildHost-netcore\**" />
+        <Exclude Files="..\..\publish-release\Api\appsettings.Development.json" />
+      </Files>
     </ComponentGroup>
 
     <!--

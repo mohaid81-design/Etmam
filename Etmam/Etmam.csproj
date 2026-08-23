@@ -11,7 +11,7 @@
          check, SettingsForm.cs's About panel). Bump this together with ..\installer\EtmamSetup.iss's
          MyAppVersion when cutting a release - the two aren't auto-linked (Inno's preprocessor
          can't read an MSBuild property, and vice versa), so this is a manual two-file sync point. -->
-    <Version>1.3.0</Version>
+    <Version>1.3.1</Version>
     <!-- Without this, the SDK appends "+<git-commit-hash>" to Application.ProductVersion (since
          this is a git repo), which breaks frmStart.cs's System.Version.TryParse comparison and
          looks wrong in SettingsForm.cs's About panel. -->

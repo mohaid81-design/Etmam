@@ -24,6 +24,11 @@ namespace Application
             services.AddScoped<ConstructionInspectionRequestsService>();
             services.AddScoped<ProcurementLookupsService>();
             services.AddScoped<AttachmentsService>();
+            services.AddScoped<DisciplinesService>();
+            services.AddScoped<BuildingsService>();
+            services.AddScoped<FloorsService>();
+            services.AddScoped<SecondaryDisciplinesService>();
+            services.AddScoped<InspectionActivitiesService>();
 
             return services;
         }

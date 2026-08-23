@@ -185,16 +185,26 @@ Ordered per the phase plan above, not alphabetically. Checked box = migrated (no
 
 ### General/Masters + DrawingsMgt/Masters + Stores/Suppliers (simple CRUD — do 2nd)
 
-- [ ] `Etmam/Gui/General/Masters/Buildings/frmBuildingAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/Buildings/ucBuildingsList.cs`
-- [ ] `Etmam/Gui/General/Masters/Disciplines/frmDisciplineAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/Disciplines/ucDisciplinesList.cs`
-- [ ] `Etmam/Gui/General/Masters/Floors/frmFloorAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/Floors/ucFloorsList.cs`
-- [ ] `Etmam/Gui/General/Masters/InspectionActivities/frmInspectionActivityAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/InspectionActivities/ucInspectionActivitiesList.cs`
-- [ ] `Etmam/Gui/General/Masters/SecondaryDisciplines/frmSecondaryDisciplineAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/SecondaryDisciplines/ucSecondaryDisciplinesList.cs`
+- [x] `Etmam/Gui/General/Masters/Buildings/frmBuildingAddEdit.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/Buildings/ucBuildingsList.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/Disciplines/frmDisciplineAddEdit.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/Disciplines/ucDisciplinesList.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/Floors/frmFloorAddEdit.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/Floors/ucFloorsList.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/InspectionActivities/frmInspectionActivityAddEdit.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/InspectionActivities/ucInspectionActivitiesList.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/SecondaryDisciplines/frmSecondaryDisciplineAddEdit.cs` (2026-08-24)
+- [x] `Etmam/Gui/General/Masters/SecondaryDisciplines/ucSecondaryDisciplinesList.cs` (2026-08-24)
+
+  New server-side surface for this group: `Application/Dtos/GeneralMastersDtos.cs`,
+  `Application/Services/{Disciplines,Buildings,Floors,SecondaryDisciplines,InspectionActivities}Service.cs`,
+  `Api/Controllers/{Disciplines,Buildings,Floors,SecondaryDisciplines,InspectionActivities}Controller.cs`.
+  Delete guards ported 1:1 from `Etmam/Code/Helper/ItemStoreLock.cs`'s `Is*Used` methods (that
+  helper itself is untouched — still used by whichever screens haven't migrated yet). Runtime-
+  verified: after republishing, a real login request exercised the EF model with all 5 new
+  entities' relationships in place (no model-build exception), and all 5 new routes correctly
+  401 without a token. Full CRUD round-trip not live-tested (same credentials limitation as the
+  Attachments API above).
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsCategoryAddEdit.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsCategorySelect.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsIssuerAddEdit.cs`

@@ -300,6 +300,177 @@ namespace Etmam
 
         public static async Task DeleteAttachmentAsync(int id, CancellationToken ct = default) =>
             await SendAsync(HttpMethod.Delete, $"api/attachments/{id}", ct: ct).ConfigureAwait(false);
+
+        // ─── General/Masters lookups (Disciplines/Buildings/Floors/SecondaryDisciplines/InspectionActivities) ──
+        // Response property names mirror each Core.Tables entity exactly (see Application/Dtos/
+        // GeneralMastersDtos.cs's header comment), so responses deserialize straight into the same
+        // entity type the existing grids already bind to - no parallel client-side POCO needed, same
+        // reasoning as GetProjectsAsync/ProjectsList.
+
+        public static async Task<List<DisciplinesList>> GetDisciplinesAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/disciplines", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<DisciplinesList>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<DisciplinesList>();
+        }
+
+        public static async Task<DisciplinesList?> GetDisciplineAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/disciplines/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<DisciplinesList>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateDisciplineAsync(DisciplinesList entity, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/disciplines", entity, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateDisciplineAsync(int id, DisciplinesList entity, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/disciplines/{id}", entity, ct).ConfigureAwait(false);
+
+        public static async Task DeleteDisciplineAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/disciplines/{id}", ct: ct).ConfigureAwait(false);
+
+        public static async Task<List<BuildingsList>> GetBuildingsAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/buildings", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<BuildingsList>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<BuildingsList>();
+        }
+
+        public static async Task<BuildingsList?> GetBuildingAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/buildings/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<BuildingsList>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateBuildingAsync(BuildingsList entity, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/buildings", entity, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateBuildingAsync(int id, BuildingsList entity, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/buildings/{id}", entity, ct).ConfigureAwait(false);
+
+        public static async Task DeleteBuildingAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/buildings/{id}", ct: ct).ConfigureAwait(false);
+
+        public static async Task<List<FloorsList>> GetFloorsAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/floors", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<FloorsList>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<FloorsList>();
+        }
+
+        public static async Task<FloorsList?> GetFloorAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/floors/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<FloorsList>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateFloorAsync(FloorsList entity, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/floors", entity, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateFloorAsync(int id, FloorsList entity, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/floors/{id}", entity, ct).ConfigureAwait(false);
+
+        public static async Task DeleteFloorAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/floors/{id}", ct: ct).ConfigureAwait(false);
+
+        public static async Task<List<SecondaryDisciplinesList>> GetSecondaryDisciplinesAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/secondary-disciplines", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<SecondaryDisciplinesList>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<SecondaryDisciplinesList>();
+        }
+
+        public static async Task<SecondaryDisciplinesList?> GetSecondaryDisciplineAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/secondary-disciplines/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<SecondaryDisciplinesList>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateSecondaryDisciplineAsync(SecondaryDisciplinesList entity, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/secondary-disciplines", entity, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateSecondaryDisciplineAsync(int id, SecondaryDisciplinesList entity, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/secondary-disciplines/{id}", entity, ct).ConfigureAwait(false);
+
+        public static async Task DeleteSecondaryDisciplineAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/secondary-disciplines/{id}", ct: ct).ConfigureAwait(false);
+
+        public static async Task<List<InspectionActivityList>> GetInspectionActivitiesAsync(CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Get, "api/inspection-activities", ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<InspectionActivityList>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<InspectionActivityList>();
+        }
+
+        public static async Task<InspectionActivityList?> GetInspectionActivityAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/inspection-activities/{id}");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+            }
+            return await response.Content.ReadFromJsonAsync<InspectionActivityList>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task<int> CreateInspectionActivityAsync(InspectionActivityList entity, CancellationToken ct = default)
+        {
+            var response = await SendAsync(HttpMethod.Post, "api/inspection-activities", entity, ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateInspectionActivityAsync(int id, InspectionActivityList entity, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/inspection-activities/{id}", entity, ct).ConfigureAwait(false);
+
+        public static async Task DeleteInspectionActivityAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/inspection-activities/{id}", ct: ct).ConfigureAwait(false);
     }
 
     // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).

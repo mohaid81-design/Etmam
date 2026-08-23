@@ -30,6 +30,7 @@ namespace Infrastructure.Persistence
         public DbSet<AuditLog> AuditLog => Set<AuditLog>();
         public DbSet<AwardRecommendationList> AwardRecommendationList => Set<AwardRecommendationList>();
         public DbSet<BudgetList> BudgetList => Set<BudgetList>();
+        public DbSet<BuildingsList> BuildingsList => Set<BuildingsList>();
         public DbSet<ConstructionInspectionRequestList> ConstructionInspectionRequestList => Set<ConstructionInspectionRequestList>();
         public DbSet<CostCenterList> CostCenterList => Set<CostCenterList>();
         public DbSet<DailyReport> DailyReport => Set<DailyReport>();
@@ -54,6 +55,8 @@ namespace Infrastructure.Persistence
         public DbSet<DrawingsSubmittalList> DrawingsSubmittalList => Set<DrawingsSubmittalList>();
         public DbSet<DrawingsType> DrawingsType => Set<DrawingsType>();
         public DbSet<EquipmentList> EquipmentList => Set<EquipmentList>();
+        public DbSet<FloorsList> FloorsList => Set<FloorsList>();
+        public DbSet<InspectionActivityList> InspectionActivityList => Set<InspectionActivityList>();
         public DbSet<ItemCategory> ItemCategory => Set<ItemCategory>();
         public DbSet<ItemsList> ItemsList => Set<ItemsList>();
         public DbSet<ManpowerList> ManpowerList => Set<ManpowerList>();
@@ -92,6 +95,7 @@ namespace Infrastructure.Persistence
         public DbSet<RFQVendorList> RFQVendorList => Set<RFQVendorList>();
         public DbSet<ScheduleDetails> ScheduleDetails => Set<ScheduleDetails>();
         public DbSet<ScheduleList> ScheduleList => Set<ScheduleList>();
+        public DbSet<SecondaryDisciplinesList> SecondaryDisciplinesList => Set<SecondaryDisciplinesList>();
         public DbSet<StakeholdersCategory> StakeholdersCategory => Set<StakeholdersCategory>();
         public DbSet<StakeholdersList> StakeholdersList => Set<StakeholdersList>();
         public DbSet<StockingDetails> StockingDetails => Set<StockingDetails>();

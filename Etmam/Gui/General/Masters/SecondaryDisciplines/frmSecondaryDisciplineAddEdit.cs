@@ -1,8 +1,6 @@
 using System;
-using System.Linq;
 using System.Windows.Forms;
 using Core;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 
@@ -10,7 +8,6 @@ namespace Etmam
 {
     public partial class frmSecondaryDisciplineAddEdit : DevExpress.XtraEditors.XtraForm
     {
-        private readonly DataContext dc = Data.DataContext.Shared;
         private int _id;
         private SecondaryDisciplinesList? _entity;
 
@@ -19,24 +16,32 @@ namespace Etmam
             _id = id;
             InitializeComponent();
 
-            lueDiscipline.Properties.DataSource = dc.DisciplinesList.GetBy("IsDelete = 0").ToList();
             lueDiscipline.Properties.DisplayMember = "Name";
             lueDiscipline.Properties.ValueMember = "Id";
 
             btnSaveClose.Click += btnSaveClose_Click;
             btnSaveNew.Click += btnSaveNew_Click;
 
-            LoadRecord();
+            this.Load += async (s, e) => await LoadRecordAsync();
         }
 
-        private void LoadRecord()
+        private async Task LoadRecordAsync()
         {
-            _entity = _id > 0 ? dc.SecondaryDisciplinesList.Find(_id) : new SecondaryDisciplinesList { IsActive = true };
-            if (_entity == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                _entity = new SecondaryDisciplinesList { IsActive = true };
+                lueDiscipline.Properties.DataSource = await ApiClient.GetDisciplinesAsync();
+                _entity = _id > 0 ? await ApiClient.GetSecondaryDisciplineAsync(_id) : new SecondaryDisciplinesList { IsActive = true };
+                if (_entity == null)
+                {
+                    XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _entity = new SecondaryDisciplinesList { IsActive = true };
+                }
+            }
+            finally
+            {
+                CloseOverlay(handle);
             }
 
             Text = $"تخصص ثانوي - {(_id > 0 ? "تعديل" : "جديد")}";
@@ -46,7 +51,7 @@ namespace Etmam
             chkActive.Checked = _entity.IsActive ?? true;
         }
 
-        private bool Save()
+        private async Task<bool> SaveAsync()
         {
             if (lueDiscipline.EditValue == null)
             {
@@ -70,17 +75,11 @@ namespace Etmam
 
                 if (_id > 0)
                 {
-                    _entity.UpdateDate = DateTime.Now;
-                    _entity.UpdateMachine = Session.Machine;
-                    _entity.UpdateBy = Session.CurrentUser?.Id ?? 1;
-                    dc.SecondaryDisciplinesList.Edit(_id, _entity);
+                    await ApiClient.UpdateSecondaryDisciplineAsync(_id, _entity);
                 }
                 else
                 {
-                    _entity.CreatedDate = DateTime.Now;
-                    _entity.CreatedMachine = Session.Machine;
-                    _entity.CreatedBy = Session.CurrentUser?.Id ?? 1;
-                    _id = dc.SecondaryDisciplinesList.Add(_entity);
+                    _id = await ApiClient.CreateSecondaryDisciplineAsync(_entity);
                     _entity.Id = _id;
                 }
 
@@ -97,16 +96,16 @@ namespace Etmam
             }
         }
 
-        private void btnSaveClose_Click(object sender, EventArgs e)
+        private async void btnSaveClose_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void btnSaveNew_Click(object sender, EventArgs e)
+        private async void btnSaveNew_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
 
             _id = 0;
             _entity = new SecondaryDisciplinesList { IsActive = true };

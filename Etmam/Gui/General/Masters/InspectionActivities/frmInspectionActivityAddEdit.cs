@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using Core;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 
@@ -13,55 +13,64 @@ namespace Etmam
     /// stored on the entity is SecondaryDisciplineId via lueSecondaryDiscipline.</summary>
     public partial class frmInspectionActivityAddEdit : DevExpress.XtraEditors.XtraForm
     {
-        private readonly DataContext dc = Data.DataContext.Shared;
         private int _id;
         private InspectionActivityList? _entity;
+        private List<SecondaryDisciplinesList> _secondaryDisciplines = new();
 
         public frmInspectionActivityAddEdit(int id = 0)
         {
             _id = id;
             InitializeComponent();
 
-            lueDiscipline.Properties.DataSource = dc.DisciplinesList.GetBy("IsDelete = 0").ToList();
             lueDiscipline.Properties.DisplayMember = "Name";
             lueDiscipline.Properties.ValueMember = "Id";
             lueDiscipline.EditValueChanged += (s, e) => UpdateSecondaryDisciplineDataSource();
 
             lueSecondaryDiscipline.Properties.DisplayMember = "Name";
             lueSecondaryDiscipline.Properties.ValueMember = "Id";
-            UpdateSecondaryDisciplineDataSource();
 
             btnSaveClose.Click += btnSaveClose_Click;
             btnSaveNew.Click += btnSaveNew_Click;
 
-            LoadRecord();
+            this.Load += async (s, e) => await LoadRecordAsync();
         }
 
         private void UpdateSecondaryDisciplineDataSource()
         {
             int? disciplineId = lueDiscipline.EditValue is int d ? d : null;
-            var filtered = dc.SecondaryDisciplinesList.GetBy("IsDelete = 0")
-                .Where(s => s.DisciplineId == disciplineId).ToList();
+            var filtered = _secondaryDisciplines.Where(s => s.DisciplineId == disciplineId).ToList();
             lueSecondaryDiscipline.Properties.DataSource = filtered;
 
             if (lueSecondaryDiscipline.EditValue is int currentSubId && !filtered.Any(x => x.Id == currentSubId))
                 lueSecondaryDiscipline.EditValue = null;
         }
 
-        private void LoadRecord()
+        private async Task LoadRecordAsync()
         {
-            _entity = _id > 0 ? dc.InspectionActivityList.Find(_id) : new InspectionActivityList { IsActive = true };
-            if (_entity == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                _entity = new InspectionActivityList { IsActive = true };
+                lueDiscipline.Properties.DataSource = await ApiClient.GetDisciplinesAsync();
+                _secondaryDisciplines = await ApiClient.GetSecondaryDisciplinesAsync();
+                UpdateSecondaryDisciplineDataSource();
+
+                _entity = _id > 0 ? await ApiClient.GetInspectionActivityAsync(_id) : new InspectionActivityList { IsActive = true };
+                if (_entity == null)
+                {
+                    XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _entity = new InspectionActivityList { IsActive = true };
+                }
+            }
+            finally
+            {
+                CloseOverlay(handle);
             }
 
             Text = $"نشاط فحص - {(_id > 0 ? "تعديل" : "جديد")}";
 
             var secondaryDiscipline = _entity.SecondaryDisciplineId != null
-                ? dc.SecondaryDisciplinesList.Find(_entity.SecondaryDisciplineId.Value)
+                ? _secondaryDisciplines.FirstOrDefault(s => s.Id == _entity.SecondaryDisciplineId.Value)
                 : null;
             lueDiscipline.EditValue = secondaryDiscipline?.DisciplineId;
             UpdateSecondaryDisciplineDataSource();
@@ -72,7 +81,7 @@ namespace Etmam
             chkActive.Checked = _entity.IsActive ?? true;
         }
 
-        private bool Save()
+        private async Task<bool> SaveAsync()
         {
             if (lueDiscipline.EditValue == null)
             {
@@ -101,17 +110,11 @@ namespace Etmam
 
                 if (_id > 0)
                 {
-                    _entity.UpdateDate = DateTime.Now;
-                    _entity.UpdateMachine = Session.Machine;
-                    _entity.UpdateBy = Session.CurrentUser?.Id ?? 1;
-                    dc.InspectionActivityList.Edit(_id, _entity);
+                    await ApiClient.UpdateInspectionActivityAsync(_id, _entity);
                 }
                 else
                 {
-                    _entity.CreatedDate = DateTime.Now;
-                    _entity.CreatedMachine = Session.Machine;
-                    _entity.CreatedBy = Session.CurrentUser?.Id ?? 1;
-                    _id = dc.InspectionActivityList.Add(_entity);
+                    _id = await ApiClient.CreateInspectionActivityAsync(_entity);
                     _entity.Id = _id;
                 }
 
@@ -128,16 +131,16 @@ namespace Etmam
             }
         }
 
-        private void btnSaveClose_Click(object sender, EventArgs e)
+        private async void btnSaveClose_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void btnSaveNew_Click(object sender, EventArgs e)
+        private async void btnSaveNew_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
 
             _id = 0;
             _entity = new InspectionActivityList { IsActive = true };

@@ -24,19 +24,19 @@ namespace Etmam
 
             DesignSystem.ApplyCairoFont(this);
 
-            this.Load += (s, e) => LoadData();
+            this.Load += async (s, e) => await LoadDataAsync();
 
-            bbiNew.ItemClick += (s, e) => OpenAddEdit(0);
-            bbiEdit.ItemClick += (s, e) => EditSelected();
-            bbiDelete.ItemClick += (s, e) => DeleteSelected();
-            bbiRefresh.ItemClick += (s, e) => LoadData();
+            bbiNew.ItemClick += async (s, e) => await OpenAddEditAsync(0);
+            bbiEdit.ItemClick += async (s, e) => await EditSelectedAsync();
+            bbiDelete.ItemClick += async (s, e) => await DeleteSelectedAsync();
+            bbiRefresh.ItemClick += async (s, e) => await LoadDataAsync();
 
             gridView1.CustomColumnDisplayText += GridView1_CustomColumnDisplayText;
 
-            gridView1.DoubleClick += (s, e) =>
+            gridView1.DoubleClick += async (s, e) =>
             {
                 if (gridView1.GetFocusedRow() is BuildingsList row)
-                    OpenAddEdit(row.Id);
+                    await OpenAddEditAsync(row.Id);
             };
         }
 
@@ -47,16 +47,15 @@ namespace Etmam
                 e.DisplayText = name;
         }
 
-        public void LoadData()
+        public async Task LoadDataAsync()
         {
             var handle = ShowOverlay();
             try
             {
-                _projectNames = Data.DataContext.Shared.ProjectsList.GetBy("IsDelete = 0")
-                    .ToDictionary(p => p.Id, p => p.Name ?? "");
+                var projects = await ApiClient.GetProjectsAsync();
+                _projectNames = projects.ToDictionary(p => p.Id, p => p.Name ?? "");
 
-                var data = Data.DataContext.Shared.BuildingsList.GetBy("IsDelete = 0");
-                gridControl1.DataSource = data.ToList();
+                gridControl1.DataSource = await ApiClient.GetBuildingsAsync();
             }
             catch (Exception ex)
             {
@@ -68,7 +67,7 @@ namespace Etmam
             }
         }
 
-        private void OpenAddEdit(int id)
+        private async Task OpenAddEditAsync(int id)
         {
             if (!_canManage)
             {
@@ -86,12 +85,12 @@ namespace Etmam
             {
                 if (frm.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    LoadData();
+                    await LoadDataAsync();
                 }
             }
         }
 
-        private void EditSelected()
+        private async Task EditSelectedAsync()
         {
             var row = gridView1.GetFocusedRow() as BuildingsList;
             if (row == null)
@@ -99,10 +98,10 @@ namespace Etmam
                 XtraMessageBox.Show("يرجى تحديد مبنى لتعديله.", "تنبيه", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenAddEdit(row.Id);
+            await OpenAddEditAsync(row.Id);
         }
 
-        private void DeleteSelected()
+        private async Task DeleteSelectedAsync()
         {
             var row = gridView1.GetFocusedRow() as BuildingsList;
             if (row == null)
@@ -116,14 +115,9 @@ namespace Etmam
                 var handle = ShowOverlay();
                 try
                 {
-                    row.IsDelete = true;
-                    row.DeletionDate = DateTime.Now;
-                    row.DeletionMachine = Session.Machine;
-                    row.DeletionBy = Session.CurrentUser?.Id ?? 1;
-
-                    Data.DataContext.Shared.BuildingsList.Edit(row.Id, row);
+                    await ApiClient.DeleteBuildingAsync(row.Id);
                     XtraMessageBox.Show("تم حذف المبنى بنجاح.", "حذف", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    LoadData();
+                    await LoadDataAsync();
                 }
                 catch (Exception ex)
                 {

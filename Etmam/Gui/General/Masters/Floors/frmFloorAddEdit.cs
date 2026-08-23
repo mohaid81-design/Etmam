@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using Core;
-using Data;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 
@@ -11,7 +10,6 @@ namespace Etmam
 {
     public partial class frmFloorAddEdit : DevExpress.XtraEditors.XtraForm
     {
-        private readonly DataContext dc = Data.DataContext.Shared;
         private int _id;
         private FloorsList? _entity;
         private List<BuildingsList> _buildings = new();
@@ -21,20 +19,17 @@ namespace Etmam
             _id = id;
             InitializeComponent();
 
-            lueProject.Properties.DataSource = dc.ProjectsList.GetBy("IsDelete = 0").ToList();
             lueProject.Properties.DisplayMember = "Name";
             lueProject.Properties.ValueMember = "Id";
 
             lueBuilding.Properties.DisplayMember = "Name";
             lueBuilding.Properties.ValueMember = "Id";
-            _buildings = dc.BuildingsList.GetBy("IsDelete = 0").ToList();
-            UpdateBuildingDataSource();
             lueProject.EditValueChanged += (s, e) => UpdateBuildingDataSource();
+
+            this.Load += async (s, e) => await LoadRecordAsync();
 
             btnSaveClose.Click += btnSaveClose_Click;
             btnSaveNew.Click += btnSaveNew_Click;
-
-            LoadRecord();
         }
 
         /// <summary>Filters lueBuilding to the currently-selected project — same cascading pattern
@@ -57,14 +52,24 @@ namespace Etmam
             return int.TryParse(val.ToString(), out int res) ? res : null;
         }
 
-        private void LoadRecord()
+        private async Task LoadRecordAsync()
         {
-            _entity = _id > 0 ? dc.FloorsList.Find(_id) : new FloorsList { IsActive = true };
-            if (_entity == null)
+            var handle = ShowOverlay();
+            try
             {
-                XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                _entity = new FloorsList { IsActive = true };
+                lueProject.Properties.DataSource = await ApiClient.GetProjectsAsync();
+                _buildings = await ApiClient.GetBuildingsAsync();
+                _entity = _id > 0 ? await ApiClient.GetFloorAsync(_id) : new FloorsList { IsActive = true };
+                if (_entity == null)
+                {
+                    XtraMessageBox.Show("لم يتم العثور على السجل المطلوب.", "خطأ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _entity = new FloorsList { IsActive = true };
+                }
+            }
+            finally
+            {
+                CloseOverlay(handle);
             }
 
             Text = $"طابق - {(_id > 0 ? "تعديل" : "جديد")}";
@@ -78,7 +83,7 @@ namespace Etmam
             chkActive.Checked = _entity.IsActive ?? true;
         }
 
-        private bool Save()
+        private async Task<bool> SaveAsync()
         {
             if (GetLookUpValue(lueProject) == null)
             {
@@ -106,17 +111,11 @@ namespace Etmam
 
                 if (_id > 0)
                 {
-                    _entity.UpdateDate = DateTime.Now;
-                    _entity.UpdateMachine = Session.Machine;
-                    _entity.UpdateBy = Session.CurrentUser?.Id ?? 1;
-                    dc.FloorsList.Edit(_id, _entity);
+                    await ApiClient.UpdateFloorAsync(_id, _entity);
                 }
                 else
                 {
-                    _entity.CreatedDate = DateTime.Now;
-                    _entity.CreatedMachine = Session.Machine;
-                    _entity.CreatedBy = Session.CurrentUser?.Id ?? 1;
-                    _id = dc.FloorsList.Add(_entity);
+                    _id = await ApiClient.CreateFloorAsync(_entity);
                     _entity.Id = _id;
                 }
 
@@ -133,16 +132,16 @@ namespace Etmam
             }
         }
 
-        private void btnSaveClose_Click(object sender, EventArgs e)
+        private async void btnSaveClose_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void btnSaveNew_Click(object sender, EventArgs e)
+        private async void btnSaveNew_Click(object sender, EventArgs e)
         {
-            if (!Save()) return;
+            if (!await SaveAsync()) return;
 
             _id = 0;
             _entity = new FloorsList { IsActive = true };

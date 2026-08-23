@@ -69,6 +69,16 @@ namespace Application.Interfaces
         DbSet<CostCenterList> CostCenterList { get; }
         DbSet<BudgetList> BudgetList { get; }
 
+        // General/Masters simple lookups (see Application/Services/DisciplinesService.cs and
+        // siblings) plus the cross-referenced tables their "used elsewhere" delete guards check
+        // that weren't already exposed above (mirrors Etmam/Code/Helper/ItemStoreLock.cs's
+        // IsBuildingUsed/IsFloorUsed/IsDisciplineUsed/IsSecondaryDisciplineUsed/IsInspectionActivityUsed).
+        // DisciplinesList itself was already exposed above.
+        DbSet<BuildingsList> BuildingsList { get; }
+        DbSet<FloorsList> FloorsList { get; }
+        DbSet<SecondaryDisciplinesList> SecondaryDisciplinesList { get; }
+        DbSet<InspectionActivityList> InspectionActivityList { get; }
+
         // Referenced only to check project usage before delete (see ProjectsService.DeleteAsync),
         // mirroring the desktop client's Etmam/Code/ProjectValidationHelper.cs HasTransactions.
         DbSet<MaterialApprovalRequestList> MaterialApprovalRequestList { get; }

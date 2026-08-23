@@ -9,10 +9,10 @@ namespace Application.Interfaces
     /// desktop client's engine uses. An instance started from the desktop can be approved from the
     /// web and vice versa - both sides converge on the same rows, no sync needed.
     ///
-    /// Deliberately does not port WorkflowEngine's WhatsApp notification side effects
-    /// (SendStartNotifications/SendTransitionNotifications/SendReturnNotifications) - those are a
-    /// legacy desktop-context concern (WhatsAppNotifier, static Session) with no web equivalent
-    /// yet; out of scope for this slice.
+    /// WhatsApp transition notifications ARE ported (see WorkflowService.SendTransitionNotificationsAsync,
+    /// wired into ActAsync via IWhatsAppNotifier) - the only documented gap is one extra hook
+    /// (WorkflowEntityDescriptors.NotifyFullyApproved's PurchaseRequestList "fully approved -> notify
+    /// who can raise a PO"), not notifications in general.
     /// </summary>
     public interface IWorkflowService
     {
@@ -41,5 +41,11 @@ namespace Application.Interfaces
         Task<WorkflowInstanceList?> GetLatestInstanceAsync(string entityName, int entityRecordId, CancellationToken ct = default);
 
         Task<string?> GetCurrentStepNameAsync(WorkflowInstanceList instance, CancellationToken ct = default);
+
+        /// <summary>Every InProgress instance whose CURRENT step this user may act on - snapshot-first
+        /// per instance, live-fallback for any instance with no snapshot rows (started before
+        /// snapshotting existed). Batched rather than per-instance queries, matching
+        /// Data/WorkflowEngine.GetPendingForUser's approach.</summary>
+        Task<List<WorkflowInstanceList>> GetPendingForUserAsync(int userId, CancellationToken ct = default);
     }
 }

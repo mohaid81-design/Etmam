@@ -26,8 +26,28 @@ via `.Include(p => p.Client)` in `ProjectsService.GetAllAsync`, materialize-then
 
 Tracks the WinForms screens still calling `Data.DataContext.Shared` directly (straight to SQL
 Server) instead of going through the new `Api` project. Generated from `grep -rl
-"DataContext.Shared" Etmam --include="*.cs"` right after the Auth + Projects vertical slice
-landed — 103 files remained at that point, grouped below by `Etmam/Gui/*` module.
+"DataContext.Shared" Etmam --include="*.cs"`, grouped below by `Etmam/Gui/*` module (and
+`Etmam/Code/*` for shared base/helper classes).
+
+**Goal for this pass (confirmed 2026-08-24): reduce/eliminate `Etmam.exe`'s direct dependency on
+the database** — every screen below needs a working local SQL connection profile provisioned
+(`Data.DBSetting`, DPAPI-encrypted per Windows user) purely because it still calls
+`DataContext.Shared`; moving a screen to the API removes that requirement for that screen.
+**Server-side fine-grained permission enforcement (`PermNames.*` — per-store action grants,
+workflow-definition access, screen-level access) is explicitly out of scope for this effort** and
+stays a WinForms-only concern, deferred to a separate future security-hardening project. Don't
+add it opportunistically while migrating a screen unless asked.
+
+**`Web/` (the Blazor project) needs no migration work** — it has zero `DataContext` references
+anywhere and was built API-native from the start (`Web/Services/EtmamApiClient.cs` is a plain
+HTTP client against the same `Api` endpoints).
+
+An earlier version of this doc undercounted (103 files, and 4 of those were stale — already
+migrated) because its `grep` was scoped to `Etmam/Gui/*` and missed `Etmam/Code/*` plus a few
+whole subfolders (`BOQMgt`, `DocumentsMgt/ConstructionInspectionRequest`,
+`General/Masters/{Buildings,Floors,InspectionActivities,SecondaryDisciplines}`). Verified true
+count as of 2026-08-24: **127 files**. Re-run the grep and diff against this doc at the start of
+each future migration session rather than trusting it blindly — it has drifted before.
 
 ## Reference pattern (what "migrated" looks like)
 
@@ -105,27 +125,76 @@ blocker for anything in this slice since nothing here does that kind of `.Includ
 deliberate decision (add filters to those five too, or make the navigations optional) before a
 screen that does eager-load through `UsersList` gets migrated.
 
+## Suggested phase order (see the session that wrote this note for full rationale)
+
+1. **Cross-cutting prerequisites** (do once, unblocks everything below): the `10622` soft-delete
+   filter fix above; a generic Attachments API (nothing exists yet — `AttachmentList.FileData`/
+   `DrawingAttachment.FileData` are DB blobs already, just no upload/download endpoint); port
+   `WorkflowService.GetPendingForUser` (only `GetActiveInstance`/`GetLatestInstance` exist so far).
+2. **Simple master/lookup CRUD** (General/Masters, DrawingsMgt/Masters, Stores/Suppliers leftovers)
+   — lowest risk, fastest, direct copy of the Units/Suppliers/Stores pattern.
+3. **Reports/Excel import** — fold into whichever module owns the parent screen, not a standalone
+   phase. All `*Printer.cs` classes are pure read (Find/GetBy → bind to an unchanged `XtraReport`).
+   Excel importers loop existing single-entity Create calls, no bulk-insert endpoint needed.
+   `frmBudgetImportWizard.cs`/`frmImportExportWizard.cs` are empty stubs — skip, don't "migrate" a
+   no-op.
+4. **Inventory transactional documents** (Items first, then OpeningBalance/Stocking, then
+   MaterialIssued/Receive, then MaterialIssueReturn/Transfer/PurchaseReturn) — each needs a
+   `WorkflowSync`-equivalent service wrapping `Infrastructure/Services/WorkflowService.cs`, same
+   pattern `PurchaseRequestsService`/`PurchaseOrdersService`/`ConstructionInspectionRequestsService`
+   already use.
+5. **Procurement remaining documents** (PriceQuotation/RFQ/Negotiation/AwardRecommendation/
+   TechnicalEvaluation, POAmendment) — most workflow-dense remaining cluster, do after step 4 has
+   exercised the WorkflowSync pattern more.
+6. **DocumentsMgt** (largest module: CIR remaining forms, DailyReport + sub-entities, DrawingsMgt
+   core, MAR, Transmittals) — heaviest attachments consumer, do after step 1's attachments API is
+   proven.
+7. **BOQ + WorkflowMgt** — `ucMyWorkflowTasks.cs` needs step 1's `GetPendingForUser`. Check whether
+   BOQMgt's other sub-features (Analysis/Approval/Comparison/Explorer/Reports/RevisionManagement —
+   currently DB-free) are unbuilt placeholders before assuming they're out of scope.
+8. **`Etmam/Code` base classes/helpers** — last, since they're referenced across every module above.
+
+Verification per phase: deploy API-side changes before shipping a WinForms build that calls them
+(purely additive, safe independently); check the NULL-audit-column backfill against production for
+any newly-touched table; don't delete a screen's old `Data.DataContext.Shared` path immediately —
+keep both until the API path has run in production for a burn-in period, especially for
+workflow/transactional screens.
+
 ## Remaining files by module
 
-### Code (base/shared)
+Ordered per the phase plan above, not alphabetically. Checked box = migrated (no longer calls
+`DataContext.Shared`).
 
-- [ ] `Etmam/Code/Base/BaseRibbonForm.cs`
-- [ ] `Etmam/Code/Base/BaseUserControl.cs`
-- [ ] `Etmam/Code/Helper/PrintHelper.cs`
+### Cross-cutting prerequisites (no screen migration yet, but blocks most of the below)
 
-### DocumentsMgt
+- [x] `10622` soft-delete filter fix — done via `Navigation(...).IsRequired(false)` on the five
+      `UsersList` FKs in `Infrastructure/Persistence/ApplicationDbContext.cs` (2026-08-24).
+      Runtime-verified: EF model builds and executes a real query successfully (a login request
+      reached `UsersList` with this change in place).
+- [x] Attachments API for `AttachmentList` — `Application/Dtos/AttachmentDtos.cs`,
+      `Application/Services/AttachmentsService.cs`, `Api/Controllers/AttachmentsController.cs`,
+      `ApiClient.cs` additions (2026-08-24). Route registration + `[Authorize]` gating verified live
+      (401 without a token, not 404). Full upload/download round-trip **not** live-tested — no
+      valid login credentials were available in that session; verify this before relying on it in
+      production. `DrawingAttachmentsController.cs` (for `DrawingAttachment`, used by
+      `ucDrawingsAttachment.cs`) is **not** built yet — same pattern, do it when DrawingsMgt
+      migrates (Phase 6/"do 6th" below).
+- [x] `WorkflowService.GetPendingForUser` port — `Infrastructure/Services/WorkflowService.cs` +
+      `Application/Interfaces/IWorkflowService.cs` (2026-08-24). Compiles; not yet exercised by a
+      real caller (`ucMyWorkflowTasks.cs` hasn't migrated yet — Phase 7/"do 7th" below).
 
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/DailyReportPrinter.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmActivityAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmActivitySelect.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmDailyReport.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmEquipment.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmEquipmentAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmImportSchedule.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmManpower.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmManpowerAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmWorkDoneAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmWorkDoneSelection.cs`
+### General/Masters + DrawingsMgt/Masters + Stores/Suppliers (simple CRUD — do 2nd)
+
+- [ ] `Etmam/Gui/General/Masters/Buildings/frmBuildingAddEdit.cs`
+- [ ] `Etmam/Gui/General/Masters/Buildings/ucBuildingsList.cs`
+- [ ] `Etmam/Gui/General/Masters/Disciplines/frmDisciplineAddEdit.cs`
+- [ ] `Etmam/Gui/General/Masters/Disciplines/ucDisciplinesList.cs`
+- [ ] `Etmam/Gui/General/Masters/Floors/frmFloorAddEdit.cs`
+- [ ] `Etmam/Gui/General/Masters/Floors/ucFloorsList.cs`
+- [ ] `Etmam/Gui/General/Masters/InspectionActivities/frmInspectionActivityAddEdit.cs`
+- [ ] `Etmam/Gui/General/Masters/InspectionActivities/ucInspectionActivitiesList.cs`
+- [ ] `Etmam/Gui/General/Masters/SecondaryDisciplines/frmSecondaryDisciplineAddEdit.cs`
+- [ ] `Etmam/Gui/General/Masters/SecondaryDisciplines/ucSecondaryDisciplinesList.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsCategoryAddEdit.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsCategorySelect.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/frmDrawingsIssuerAddEdit.cs`
@@ -135,25 +204,21 @@ screen that does eager-load through `UsersList` gets migrated.
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/ucDrawingsCategory.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/ucDrawingsIssuer.cs`
 - [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/Masters/ucDrawingsSubCategory.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/frmDrawingsAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsAttachment.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsDahboard.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/MaterialApprovalRequest/frmMARAddEdit.cs`
-- [ ] `Etmam/Gui/DocumentsMgt/Transmittals/frmTransmittalAddEdit.cs`
-
-### General
-
+- [ ] `Etmam/Gui/InventoryModule/Stores/frmStoreAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/Stores/ucStores.cs`
+- [ ] `Etmam/Gui/ProcurementModule/Suppliers/frmSupplierAddEdit.cs`
+- [ ] `Etmam/Gui/ProcurementModule/Suppliers/frmSupplierCategoryAddEdit.cs`
+- [ ] `Etmam/Gui/ProcurementModule/Suppliers/ucSuppliers.cs`
 - [ ] `Etmam/Gui/General/ImportFromExcel/ImportDataFromExcel.cs`
-- [ ] `Etmam/Gui/General/Masters/Disciplines/frmDisciplineAddEdit.cs`
-- [ ] `Etmam/Gui/General/Masters/Disciplines/ucDisciplinesList.cs`
 - [ ] `Etmam/Gui/General/ProjectsMgt/frmProjectSelect.cs`
+- [x] `Etmam/Gui/General/ucAttachmentAddEdit.cs` (2026-08-24 — proved out the Attachments API; see
+      above for what's live-verified vs. not)
 - [ ] `Etmam/Gui/General/Setting/frmPermissionsAddEdit.cs`
 - [ ] `Etmam/Gui/General/SystemSettings/SettingsForm.cs`
-- [ ] `Etmam/Gui/General/UsersMgt/frmUsersMgt.cs`
-- [ ] `Etmam/Gui/General/ucAttachmentAddEdit.cs`
+- [ ] `Etmam/Gui/General/UsersMgt/frmUsersMgt.cs` (touches the soft-delete-filter prerequisite —
+      do after that lands)
 
-### InventoryModule
+### InventoryModule transactional documents (do 4th)
 
 - [ ] `Etmam/Gui/InventoryModule/InventoryReports/ucInventoryReports.cs`
 - [ ] `Etmam/Gui/InventoryModule/Items/frmItemAddEdit.cs`
@@ -161,71 +226,118 @@ screen that does eager-load through `UsersList` gets migrated.
 - [ ] `Etmam/Gui/InventoryModule/Items/frmItemSelect.cs`
 - [ ] `Etmam/Gui/InventoryModule/Items/ucItems.cs`
 - [ ] `Etmam/Gui/InventoryModule/Items/ucItemsCategories.cs`
-- [ ] `Etmam/Gui/InventoryModule/Masters/frmUnitAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/Masters/ucUnits.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/MaterialIssueReturnPrinter.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/frmMaterialIssueReturnAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/ucMaterialIssueReturn.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/MaterialIssuedPrinter.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/frmMaterialIssuedAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/ucMaterialIssued.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/MaterialReceivePrinter.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/frmMaterialReceiveAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/frmPurchaseOrderSelect.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/ucMaterialReceive.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/MaterialTransferPrinter.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/frmMaterialTransferAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/ucMaterialTrasfare.cs`
+- [ ] `Etmam/Gui/InventoryModule/Items/ucItemsList.cs`
 - [ ] `Etmam/Gui/InventoryModule/OpeningBalance/OpeningBalancePrinter.cs`
 - [ ] `Etmam/Gui/InventoryModule/OpeningBalance/frmOpeningBalanceAddEdit.cs`
 - [ ] `Etmam/Gui/InventoryModule/OpeningBalance/ucOpeningBalance.cs`
+- [ ] `Etmam/Gui/InventoryModule/Stocking/StockingPrinter.cs`
+- [ ] `Etmam/Gui/InventoryModule/Stocking/frmStockingAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/Stocking/ucStocking.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/MaterialIssuedPrinter.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/frmMaterialIssuedAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/frmMaterialIssuedLog.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssued/ucMaterialIssued.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/MaterialReceivePrinter.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/frmMaterialReceiveAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/frmMaterialReceiveLog.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/frmPurchaseOrderSelect.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialReceive/ucMaterialReceive.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/MaterialIssueReturnPrinter.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/frmMaterialIssueReturnAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialIssueReturn/ucMaterialIssueReturn.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/MaterialTransferPrinter.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/frmMaterialTransferAddEdit.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/frmMaterialTransferLog.cs`
+- [ ] `Etmam/Gui/InventoryModule/MaterialTransfer/ucMaterialTrasfare.cs`
 - [ ] `Etmam/Gui/InventoryModule/PurchaseReturn/PurchaseReturnPrinter.cs`
 - [ ] `Etmam/Gui/InventoryModule/PurchaseReturn/frmMaterialReceiveSelect.cs`
 - [ ] `Etmam/Gui/InventoryModule/PurchaseReturn/frmPurchaseReturnAddEdit.cs`
 - [ ] `Etmam/Gui/InventoryModule/PurchaseReturn/ucPurchaseReturn.cs`
-- [ ] `Etmam/Gui/InventoryModule/Stocking/StockingPrinter.cs`
-- [ ] `Etmam/Gui/InventoryModule/Stocking/frmStockingAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/Stocking/ucStocking.cs`
-- [ ] `Etmam/Gui/InventoryModule/Stores/frmStoreAddEdit.cs`
-- [ ] `Etmam/Gui/InventoryModule/Stores/ucStores.cs`
 
-### MainPage
+### ProcurementModule remaining documents (do 5th)
 
-- [ ] `Etmam/Gui/MainPage/frmMainPage.cs`
-- [ ] `Etmam/Gui/MainPage/frmUpdatePassword.cs`
-
-### ProcurementModule
-
-- [ ] `Etmam/Gui/ProcurementModule/Common/SimpleEditFormBase.cs` (base class — other subclasses
-      besides `frmProjectAddEdit` still use `dc` directly; keep it dual-purpose until every
-      subclass has its own `IDataHelper<T>` API adapter)
-- [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmAwardRecommendationAddEdit.cs`
-- [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmNegotiationAddEdit.cs`
+- [ ] `Etmam/Gui/ProcurementModule/Common/SimpleEditFormBase.cs` (base class — keep dual-purpose,
+      supporting both `dc`-direct and API adapters, until every subclass has migrated)
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmPriceQuotationAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmPriceQuotationCompareAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmPriceQuotationSelect.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmRFQAddEdit.cs`
+- [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmNegotiationAddEdit.cs`
+- [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmAwardRecommendationAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/frmTechnicalEvaluationAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/ucPriceQuotation.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/ucPriceQuotationCompare.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PriceQuotation/ucRFQ.cs`
+- [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/PurchaseOrderPrinter.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/frmPOAmendmentAddEdit.cs`
-- [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/frmPurchaseOrderAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/frmPurchaseRequestSelect.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/ucPOAmendment.cs`
-- [ ] `Etmam/Gui/ProcurementModule/PurchaseOrder/ucPurchaseOrder.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PurchaseRequest/PurchaseRequestPrinter.cs`
-- [ ] `Etmam/Gui/ProcurementModule/PurchaseRequest/frmPurchaseRequestAddEdit.cs`
 - [ ] `Etmam/Gui/ProcurementModule/PurchaseRequest/frmPurchaseRequestLog.cs`
-- [ ] `Etmam/Gui/ProcurementModule/PurchaseRequest/ucPurchaseRequests.cs`
-- [ ] `Etmam/Gui/ProcurementModule/Suppliers/frmSupplierAddEdit.cs`
-- [ ] `Etmam/Gui/ProcurementModule/Suppliers/frmSupplierCategoryAddEdit.cs`
-- [ ] `Etmam/Gui/ProcurementModule/Suppliers/frmSupplierSelect.cs`
-- [ ] `Etmam/Gui/ProcurementModule/Suppliers/ucSuppliers.cs`
 
-### WorkflowMgt
+### DocumentsMgt (do 6th — heaviest attachments consumer)
 
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/CIRPrinter.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/CIRReissuer.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmCIRAction.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmBuildingSelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmDisciplineSelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmFloorSelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmInspectionActivitySelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/ConstructionInspectionRequest/frmSecondaryDisciplineSelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmDailyReport.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/DailyReportPrinter.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmActivityAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmActivitySelect.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmEquipment.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmEquipmentAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmManpower.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmManpowerAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmWorkDoneAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmWorkDoneSelection.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DailyReport/frmImportSchedule.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/frmDrawingsAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsAttachment.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/DrawingsMgt/ucDrawingsDahboard.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/MaterialApprovalRequest/frmMARAddEdit.cs`
+- [ ] `Etmam/Gui/DocumentsMgt/Transmittals/frmTransmittalAddEdit.cs`
+
+### BOQMgt + WorkflowMgt (do 7th — smallest remaining, `ucMyWorkflowTasks.cs` needs the
+### `GetPendingForUser` prerequisite)
+
+- [ ] `Etmam/Gui/BOQMgt/BOQEditor/ucBOQEditor.cs`
+- [ ] `Etmam/Gui/BOQMgt/BOQList/frmBOQNew.cs`
+- [ ] `Etmam/Gui/BOQMgt/BOQList/ucBOQList.cs`
 - [ ] `Etmam/Gui/WorkflowMgt/Definitions/frmApprovalMatrixAddEdit.cs`
 - [ ] `Etmam/Gui/WorkflowMgt/Definitions/frmWorkflowDefinitionAddEdit.cs`
 - [ ] `Etmam/Gui/WorkflowMgt/Definitions/ucApprovalMatrix.cs`
 - [ ] `Etmam/Gui/WorkflowMgt/MyTasks/ucMyWorkflowTasks.cs`
+
+### MainPage (small, no strong phase affinity)
+
+- [ ] `Etmam/Gui/MainPage/frmMainPage.cs`
+- [ ] `Etmam/Gui/MainPage/frmStart.cs`
+
+### `Etmam/Code`/`Common` base classes and shared helpers (do last — referenced across every
+### module above)
+
+- [ ] `Etmam/Code/Base/BaseRibbonForm.cs`
+- [ ] `Etmam/Code/Base/BaseUserControl.cs`
+- [ ] `Etmam/Code/Helper/AttachmentStorage.cs` (likely collapses into the Attachments API
+      prerequisite rather than being a standalone item — check when that lands)
+- [ ] `Etmam/Code/Helper/PrintHelper.cs`
+- [ ] `Etmam/Code/ProjectValidationHelper.cs`
+- [ ] `Etmam/Gui/Common/frmSendEmail.cs`
+
+### Not on this list — empty stubs, no migration needed
+
+- `Etmam/Gui/BudgetMgt/BudgetImportWizard/frmBudgetImportWizard.cs` — all event handlers are no-ops
+- `Etmam/Gui/PlanningMgt/ImportExportWizard/frmImportExportWizard.cs` — likewise tiny/stub
+
+### Not on this list — whole modules with zero `DataContext.Shared` hits (unbuilt features or
+### already data-free; confirm before assuming, don't just trust this note forever)
+
+`BudgetMgt`, `ContractMgt`, `CorrespondenceMgt`, `CostControlMgt`, `EDMSMgt`, `HSEMgt`,
+`PlanningMgt`, `QualityMgt`, `SubcontractorModule`, `ProjectsModule` (besides `ucProjectsList.cs`/
+`frmProjectAddEdit.cs`/`ucProjectsMgt.cs`, already covered above/in "Known partially-migrated").

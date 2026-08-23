@@ -164,7 +164,11 @@ namespace Etmam
             OpenBytes(att.Id, att.FileData, att.FileName ?? "مرفق", "Drawing_");
         }
 
-        private static void OpenBytes(int attachmentId, byte[] data, string fileName, string prefix = "")
+        /// <summary>Opens bytes already downloaded from the API (see ApiClient.DownloadAttachmentBytesAsync)
+        /// the same way OpenFile(AttachmentList) opens DB-stored FileData — writes to a temp file
+        /// first (the shell needs an actual path) and opens that. Public because it has no
+        /// DataContext dependency, unlike the rest of this class.</summary>
+        public static void OpenBytes(int attachmentId, byte[] data, string fileName, string prefix = "")
         {
             string tempPath = WriteToTempFile(attachmentId, data, fileName, prefix);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -221,6 +225,14 @@ namespace Etmam
 
             string dest = UniqueDestination(targetFolder, att.FileName ?? "مرفق");
             File.WriteAllBytes(dest, att.FileData);
+        }
+
+        /// <summary>Download counterpart to OpenBytes — writes bytes already fetched from the API to
+        /// a user-chosen folder. Public for the same reason OpenBytes is.</summary>
+        public static void DownloadBytes(string fileName, byte[] data, string targetFolder)
+        {
+            string dest = UniqueDestination(targetFolder, fileName);
+            File.WriteAllBytes(dest, data);
         }
 
         /// <summary>Picks a non-colliding destination path in targetFolder for fileName, appending

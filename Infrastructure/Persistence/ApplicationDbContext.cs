@@ -191,6 +191,26 @@ namespace Infrastructure.Persistence
             {
                 property.SetColumnType("decimal(19,4)");
             }
+
+            // Resolves the EF Core 10622 model-validation warning: UsersList carries the
+            // soft-delete filter above, but these five entities have a *required* FK into it
+            // (the CreatedBy/UpdateBy/DeletionBy int is non-nullable — every action always has an
+            // actor, including the "unknown creator -> 0" convention from the legacy NULL-audit-
+            // column backfill, see docs/api-migration-checklist.md) with no filter of their own.
+            // Eager-loading one of these could silently resolve a since-soft-deleted actor's
+            // navigation to null despite the relationship being modeled as required, which is
+            // exactly what the warning flags. None of these five conceptually need their own
+            // soft-delete filter (ScheduleList/UserPermissionStatus/UserProjectAccess/
+            // UserStoreAccess/UserWorkflowAccess aren't IBaseEntity), and the FK ints must stay
+            // non-nullable, so the fix is telling EF the *navigation* is optional rather than
+            // adding a filter these entities don't have a concept for.
+            modelBuilder.Entity<ScheduleList>().Navigation(e => e.Created).IsRequired(false);
+            modelBuilder.Entity<ScheduleList>().Navigation(e => e.Update).IsRequired(false);
+            modelBuilder.Entity<ScheduleList>().Navigation(e => e.Deletion).IsRequired(false);
+            modelBuilder.Entity<UserPermissionStatus>().Navigation(e => e.Update).IsRequired(false);
+            modelBuilder.Entity<UserProjectAccess>().Navigation(e => e.Update).IsRequired(false);
+            modelBuilder.Entity<UserStoreAccess>().Navigation(e => e.Update).IsRequired(false);
+            modelBuilder.Entity<UserWorkflowAccess>().Navigation(e => e.Update).IsRequired(false);
         }
 
         private static void ApplySoftDeleteFilter<TEntity>(ModelBuilder modelBuilder)

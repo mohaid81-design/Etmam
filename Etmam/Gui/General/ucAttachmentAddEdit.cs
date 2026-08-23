@@ -1,4 +1,3 @@
-using Core;
 using DevExpress.XtraEditors;
 using DevExpress.XtraSplashScreen;
 using System;
@@ -12,7 +11,8 @@ namespace Etmam
     /// <summary>
     /// Reusable attachment panel that any Add/Edit form can embed to let users attach files to
     /// its record. Shows files linked to (EntityName, EntityRecordId) with toolbar actions:
-    /// Add / Open / Edit comment / Delete / Download.
+    /// Add / Open / Edit comment / Delete / Download. API-backed (Api/Controllers/AttachmentsController.cs)
+    /// rather than a direct DB connection - see docs/api-migration-checklist.md.
     ///
     /// Usage from a parent Add/Edit form:
     ///   ucAttachments.SaveRequired += SaveAndReturnId;   // ask the parent to save first if the record is new
@@ -23,8 +23,7 @@ namespace Etmam
         // ── State ─────────────────────────────────────────────────────────────
         private string _entityName = "";
         private int _recordId = 0;
-        private List<AttachmentList> _attachments = new();
-        private readonly Data.DataContext _dc;
+        private List<AttachmentItem> _attachments = new();
 
         // ── Events ────────────────────────────────────────────────────────────
         /// <summary>
@@ -43,7 +42,6 @@ namespace Etmam
         public ucAttachmentAddEdit()
         {
             InitializeComponent();
-            _dc = Data.DataContext.Shared;   // fully qualified to avoid implicit-using ambiguity
             if (DesignMode) return;
 
             WireEvents();
@@ -59,26 +57,30 @@ namespace Etmam
         {
             _entityName = entityName;
             _recordId = recordId;
-            RefreshGrid();
+            // Fire-and-forget: LoadFor's callers are sync (form Load handlers etc.) and this
+            // control's public signature predates the move to an async API call - RefreshGrid
+            // reports its own errors via XtraMessageBox, so there's nothing more for a caller to
+            // await or check here.
+            _ = RefreshGrid();
         }
 
         // ── Setup ─────────────────────────────────────────────────────────────
 
         private void WireEvents()
         {
-            bbiAdd.ItemClick += (s, e) => OnAddAttachment();
-            bbiDelete.ItemClick += (s, e) => OnDeleteAttachment();
-            bbiOpen.ItemClick += (s, e) => OnOpenAttachment();
-            bbiEdit.ItemClick += (s, e) => OnEditComment();
-            bbiDownload.ItemClick += (s, e) => OnDownloadAttachment();
+            bbiAdd.ItemClick += async (s, e) => await OnAddAttachment();
+            bbiDelete.ItemClick += async (s, e) => await OnDeleteAttachment();
+            bbiOpen.ItemClick += async (s, e) => await OnOpenAttachment();
+            bbiEdit.ItemClick += async (s, e) => await OnEditComment();
+            bbiDownload.ItemClick += async (s, e) => await OnDownloadAttachment();
 
-            gridView1.DoubleClick += (s, e) => OnOpenAttachment();
+            gridView1.DoubleClick += async (s, e) => await OnOpenAttachment();
             gridView1.SelectionChanged += (s, e) => UpdateButtonStates();
         }
 
         // ── Data ──────────────────────────────────────────────────────────────
 
-        private void RefreshGrid()
+        private async Task RefreshGrid()
         {
             if (_recordId <= 0 || string.IsNullOrEmpty(_entityName))
             {
@@ -90,11 +92,7 @@ namespace Etmam
 
             try
             {
-                _attachments = _dc.AttachmentList
-                    .GetBy("EntityName = @name AND EntityRecordId = @id AND IsDelete = 0",
-                        new { name = _entityName, id = _recordId })
-                    .OrderByDescending(a => a.UploadDate)
-                    .ToList();
+                _attachments = await ApiClient.GetAttachmentsAsync(_entityName, _recordId);
 
                 gridControl1.DataSource = _attachments;
                 gridView1.RefreshData();
@@ -111,7 +109,7 @@ namespace Etmam
 
         // ── Commands ──────────────────────────────────────────────────────────
 
-        private void OnAddAttachment()
+        private async Task OnAddAttachment()
         {
             // If the parent record isn't saved yet, ask the parent to save first
             if (_recordId <= 0)
@@ -150,28 +148,7 @@ namespace Etmam
                 {
                     try
                     {
-                        string fileName = Path.GetFileName(filePath);
-                        string ext = Path.GetExtension(filePath).TrimStart('.').ToLowerInvariant();
-                        byte[] data = File.ReadAllBytes(filePath);
-
-                        var attachment = new AttachmentList
-                        {
-                            EntityName = _entityName,
-                            EntityRecordId = _recordId,
-                            FileName = fileName,
-                            FileData = data,
-                            FileExtension = ext,
-                            FileSizeKB = AttachmentStorage.GetFileSizeKB(data),
-                            UploadDate = DateTime.Now,
-                            UploadedBy = Session.CurrentUser?.FullName ?? Session.CurrentUser?.UserName ?? "مجهول",
-                            Comment = "",
-                            CreatedDate = DateTime.Now,
-                            CreatedBy = Session.CurrentUser?.Id ?? 1,
-                            CreatedMachine = Session.Machine,
-                            IsDelete = false
-                        };
-
-                        _dc.AttachmentList.Add(attachment);
+                        await ApiClient.UploadAttachmentAsync(_entityName, _recordId, filePath);
                         addedCount++;
                     }
                     catch (Exception ex)
@@ -180,7 +157,7 @@ namespace Etmam
                     }
                 }
 
-                RefreshGrid();
+                await RefreshGrid();
                 if (addedCount > 0) AttachmentsChanged?.Invoke();
             }
             finally
@@ -206,7 +183,7 @@ namespace Etmam
             }
         }
 
-        private void OnEditComment()
+        private async Task OnEditComment()
         {
             var att = GetSelectedAttachment();
             if (att == null) return;
@@ -217,12 +194,8 @@ namespace Etmam
             var handle = ShowOverlay();
             try
             {
-                att.Comment = comment.ToString();
-                att.UpdateDate = DateTime.Now;
-                att.UpdateBy = Session.CurrentUser?.Id ?? 1;
-                att.UpdateMachine = Session.Machine;
-                _dc.AttachmentList.Edit(att.Id, att);
-                RefreshGrid();
+                await ApiClient.UpdateAttachmentCommentAsync(att.Id, comment.ToString());
+                await RefreshGrid();
             }
             catch (Exception ex)
             {
@@ -236,7 +209,7 @@ namespace Etmam
             }
         }
 
-        private void OnDeleteAttachment()
+        private async Task OnDeleteAttachment()
         {
             var att = GetSelectedAttachment();
             if (att == null) return;
@@ -253,17 +226,13 @@ namespace Etmam
             var handle = ShowOverlay();
             try
             {
-                // Soft-delete in DB
-                att.IsDelete = true;
-                att.DeletionDate = DateTime.Now;
-                att.DeletionBy = Session.CurrentUser?.Id ?? 1;
-                att.DeletionMachine = Session.Machine;
-                _dc.AttachmentList.Edit(att.Id, att);
+                // Soft-delete server-side. Legacy on-disk StoredPath cleanup (AttachmentStorage.DeleteFile)
+                // isn't attempted here - new uploads never populate StoredPath, only very old rows
+                // predating DB-blob storage would leave an orphaned file, a storage-cleanup concern
+                // rather than a correctness one.
+                await ApiClient.DeleteAttachmentAsync(att.Id);
 
-                // Delete from disk
-                AttachmentStorage.DeleteFile(att.StoredPath);
-
-                RefreshGrid();
+                await RefreshGrid();
                 AttachmentsChanged?.Invoke();
             }
             catch (Exception ex)
@@ -278,20 +247,16 @@ namespace Etmam
             }
         }
 
-        private void OnOpenAttachment()
+        private async Task OnOpenAttachment()
         {
             var att = GetSelectedAttachment();
             if (att == null) return;
 
+            var handle = ShowOverlay();
             try
             {
-                AttachmentStorage.OpenFile(att);
-            }
-            catch (FileNotFoundException)
-            {
-                XtraMessageBox.Show(
-                    "لم يُعثر على الملف على القرص.\nربما تم نقله أو حذفه يدوياً.",
-                    "ملف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                var data = await ApiClient.DownloadAttachmentBytesAsync(att.Id);
+                AttachmentStorage.OpenBytes(att.Id, data, att.FileName ?? "مرفق");
             }
             catch (Exception ex)
             {
@@ -299,9 +264,13 @@ namespace Etmam
                     $"لا يمكن فتح الملف:\n{ex.Message}",
                     "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
-        private void OnDownloadAttachment()
+        private async Task OnDownloadAttachment()
         {
             var att = GetSelectedAttachment();
             if (att == null) return;
@@ -314,19 +283,15 @@ namespace Etmam
 
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
+            var handle = ShowOverlay();
             try
             {
-                AttachmentStorage.DownloadFile(att, dlg.SelectedPath);
+                var data = await ApiClient.DownloadAttachmentBytesAsync(att.Id);
+                AttachmentStorage.DownloadBytes(att.FileName ?? "مرفق", data, dlg.SelectedPath);
 
                 XtraMessageBox.Show(
                     $"تم تنزيل الملف بنجاح إلى:\n{dlg.SelectedPath}",
                     "تنزيل ناجح", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (FileNotFoundException)
-            {
-                XtraMessageBox.Show(
-                    "لم يُعثر على الملف على القرص.",
-                    "ملف غير موجود", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
@@ -334,11 +299,15 @@ namespace Etmam
                     $"خطأ في التنزيل:\n{ex.Message}",
                     "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                CloseOverlay(handle);
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
-        private AttachmentList? GetSelectedAttachment()
+        private AttachmentItem? GetSelectedAttachment()
         {
             int rowHandle = gridView1.FocusedRowHandle;
             if (rowHandle < 0) return null;

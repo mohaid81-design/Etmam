@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -55,8 +56,29 @@ namespace Etmam
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         }
 
-        private static async Task<string> ReadErrorDetailAsync(HttpResponseMessage response, CancellationToken ct) =>
-            await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        // Mirrors Web/Services/EtmamApiClient.cs's EnsureSuccessAsync: surfaces the Api's
+        // { message: "..." } BadRequest body (e.g. "لا يمكن حذف هذا المورد لأنه مستخدم في مستندات
+        // محفوظة") as-is in the exception text instead of the raw JSON, so callers' generic
+        // `catch (Exception ex)` blocks can show ex.Message directly in a dialog.
+        private static async Task<string> ReadErrorDetailAsync(HttpResponseMessage response, CancellationToken ct)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            try
+            {
+                var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind == JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("message", out var m)
+                    && m.GetString() is { Length: > 0 } message)
+                {
+                    return message;
+                }
+            }
+            catch (JsonException)
+            {
+                // response body wasn't the expected { message } shape - fall through to the raw text
+            }
+            return $"{(int)response.StatusCode} {response.ReasonPhrase}: {body}";
+        }
 
         private static async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, object? body = null, CancellationToken ct = default)
         {
@@ -68,7 +90,7 @@ namespace Etmam
             if (!response.IsSuccessStatusCode)
             {
                 var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
-                throw new HttpRequestException($"{(int)response.StatusCode} {response.ReasonPhrase}: {detail}");
+                throw new HttpRequestException(detail);
             }
             return response;
         }
@@ -220,6 +242,64 @@ namespace Etmam
 
         public static async Task DeleteStoreAsync(int id, CancellationToken ct = default) =>
             await SendAsync(HttpMethod.Delete, $"api/stores/{id}", ct: ct).ConfigureAwait(false);
+
+        // ─── Attachments ────────────────────────────────────────────────────
+
+        public static async Task<List<AttachmentItem>> GetAttachmentsAsync(string entityName, int entityRecordId, CancellationToken ct = default)
+        {
+            var url = $"api/attachments?entityName={Uri.EscapeDataString(entityName)}&entityRecordId={entityRecordId}";
+            var response = await SendAsync(HttpMethod.Get, url, ct: ct).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<List<AttachmentItem>>(JsonOptions, ct).ConfigureAwait(false)
+                ?? new List<AttachmentItem>();
+        }
+
+        // Multipart upload - can't go through SendAsync (JSON-only). Reads the whole file into
+        // memory itself so callers just pass a local path, mirroring how
+        // ucAttachmentAddEdit.cs's File.ReadAllBytes call worked before this moved server-side.
+        public static async Task<int> UploadAttachmentAsync(string entityName, int entityRecordId, string filePath, CancellationToken ct = default)
+        {
+            using var content = new MultipartFormDataContent
+            {
+                { new StringContent(entityName), "entityName" },
+                { new StringContent(entityRecordId.ToString()), "entityRecordId" }
+            };
+            await using var fileStream = File.OpenRead(filePath);
+            using var fileContent = new StreamContent(fileStream);
+            content.Add(fileContent, "file", Path.GetFileName(filePath));
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/attachments") { Content = content };
+            AttachToken(request);
+
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException(detail);
+            }
+            return await response.Content.ReadFromJsonAsync<int>(JsonOptions, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>Downloads an attachment's raw bytes - callers write these to a temp file
+        /// themselves before opening/saving (same shell-open approach AttachmentStorage.OpenBytes
+        /// already used for DB-stored FileData).</summary>
+        public static async Task<byte[]> DownloadAttachmentBytesAsync(int id, CancellationToken ct = default)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/attachments/{id}/download");
+            AttachToken(request);
+            var response = await Http.SendAsync(request, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var detail = await ReadErrorDetailAsync(response, ct).ConfigureAwait(false);
+                throw new HttpRequestException(detail);
+            }
+            return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        }
+
+        public static async Task UpdateAttachmentCommentAsync(int id, string? comment, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Put, $"api/attachments/{id}", new { comment }, ct).ConfigureAwait(false);
+
+        public static async Task DeleteAttachmentAsync(int id, CancellationToken ct = default) =>
+            await SendAsync(HttpMethod.Delete, $"api/attachments/{id}", ct: ct).ConfigureAwait(false);
     }
 
     // Mirrors Application.Dtos.StakeholderLookupDto's wire shape (Id/Name only).
@@ -259,6 +339,21 @@ namespace Etmam
         public bool? IsActive { get; set; }
         public int? PrjId { get; set; }
         public string? ProjectName { get; set; }
+    }
+
+    // Mirrors Application.Dtos.AttachmentDto's wire shape - metadata only, file bytes are fetched
+    // separately via ApiClient.DownloadAttachmentBytesAsync.
+    public sealed class AttachmentItem
+    {
+        public int Id { get; set; }
+        public string EntityName { get; set; } = "";
+        public int EntityRecordId { get; set; }
+        public string FileName { get; set; } = "";
+        public string? FileExtension { get; set; }
+        public int FileSizeKB { get; set; }
+        public string? Comment { get; set; }
+        public DateTime? UploadDate { get; set; }
+        public string? UploadedBy { get; set; }
     }
 
     public sealed class ApiLoginResult

@@ -23,6 +23,7 @@ namespace Application
             services.AddScoped<PurchaseOrdersService>();
             services.AddScoped<ConstructionInspectionRequestsService>();
             services.AddScoped<ProcurementLookupsService>();
+            services.AddScoped<AttachmentsService>();
 
             return services;
         }

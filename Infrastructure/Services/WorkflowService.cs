@@ -300,6 +300,54 @@ namespace Infrastructure.Services
             return step?.Name;
         }
 
+        public async Task<List<WorkflowInstanceList>> GetPendingForUserAsync(int userId, CancellationToken ct = default)
+        {
+            var inProgress = await _db.WorkflowInstanceList.Where(i => i.Status == "InProgress").ToListAsync(ct);
+            if (inProgress.Count == 0) return [];
+
+            var instanceIds = inProgress.Select(i => i.Id).ToList();
+
+            var snapshotSteps = await _db.WorkflowInstanceStepList
+                .Where(s => instanceIds.Contains(s.WorkflowInstanceId))
+                .ToListAsync(ct);
+            var snapshotStepByInstanceAndOrder = snapshotSteps.ToDictionary(s => (s.WorkflowInstanceId, s.StepOrder));
+            var snapshottedInstanceIds = snapshotSteps.Select(s => s.WorkflowInstanceId).ToHashSet();
+
+            var snapshotStepIds = snapshotSteps.Select(s => s.Id).ToList();
+            var userAssignedSnapshotStepIds = snapshotStepIds.Count > 0
+                ? (await _db.WorkflowInstanceStepAssigneeList
+                    .Where(a => a.UserId == userId && snapshotStepIds.Contains(a.WorkflowInstanceStepId))
+                    .Select(a => a.WorkflowInstanceStepId)
+                    .ToListAsync(ct)).ToHashSet()
+                : [];
+
+            // Legacy instances (no snapshot rows at all) - resolve live exactly as before
+            // StartWorkflowAsync began snapshotting.
+            var legacyStepIdsForUser = (await _db.WorkflowStepAssigneeList
+                .Where(a => a.UserId == userId)
+                .Select(a => a.WorkflowStepId)
+                .ToListAsync(ct)).ToHashSet();
+            var legacySteps = legacyStepIdsForUser.Count > 0
+                ? await _db.WorkflowStepList.Where(s => legacyStepIdsForUser.Contains(s.Id)).ToListAsync(ct)
+                : [];
+
+            var result = new List<WorkflowInstanceList>();
+            foreach (var instance in inProgress)
+            {
+                if (snapshottedInstanceIds.Contains(instance.Id))
+                {
+                    if (snapshotStepByInstanceAndOrder.TryGetValue((instance.Id, instance.CurrentStepOrder), out var step)
+                        && userAssignedSnapshotStepIds.Contains(step.Id))
+                        result.Add(instance);
+                }
+                else if (legacySteps.Any(s => s.WorkflowDefinitionId == instance.WorkflowDefinitionId && s.StepOrder == instance.CurrentStepOrder))
+                {
+                    result.Add(instance);
+                }
+            }
+            return result;
+        }
+
         private async Task<ResolvedStep?> GetCurrentStepAsync(WorkflowInstanceList instance, CancellationToken ct)
         {
             var snapshot = await _db.WorkflowInstanceStepList

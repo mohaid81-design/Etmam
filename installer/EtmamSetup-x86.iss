@@ -1,6 +1,6 @@
 #define MyAppName "Etmam"
 #define MyAppNameArabic "نظام إتمام لإدارة المشاريع"
-#define MyAppVersion "1.3.0"
+#define MyAppVersion "1.3.1"
 #define MyAppPublisher "Etmam"
 #define MyAppExeName "Etmam.exe"
 #define MyPublishDir "..\publish-release-x86"
